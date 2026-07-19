@@ -39,3 +39,6 @@ Thumbs.db
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+
+# Root has no dependencies; its lockfile only confuses workspace-root inference
+/package-lock.json
