@@ -12,6 +12,14 @@ import { fileURLToPath } from "node:url";
 export const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 export const API_DIR = join(ROOT, "api");
 
+/**
+ * Where the launcher records the address the engine actually bound.
+ *
+ * Read by the web app's BFF so the two sides agree on a single instance
+ * instead of guessing by port. Local runtime state, not source — gitignored.
+ */
+export const ENGINE_HANDSHAKE_PATH = join(ROOT, ".engine.json");
+
 /** Path to the venv interpreter, or null when the venv does not exist yet. */
 export function findVenvPython() {
   const candidates = [

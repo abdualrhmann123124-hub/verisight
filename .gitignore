@@ -46,3 +46,6 @@ next-env.d.ts
 # Python virtual environment (api/)
 .venv/
 .pytest_cache/
+
+# Runtime handshake written by `npm run api` (engine address)
+.engine.json

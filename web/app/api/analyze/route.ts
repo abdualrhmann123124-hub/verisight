@@ -12,11 +12,75 @@ import { NextResponse } from "next/server";
  * oversized body is rejected before it is forwarded anywhere.
  */
 
-const ENGINE_URL = process.env["ANALYSIS_ENGINE_URL"] ?? "http://127.0.0.1:8000";
 const MAX_BYTES = 25 * 1024 * 1024;
 const ENGINE_TIMEOUT_MS = 60_000;
 
 const ACCEPTED = new Set(["image/png", "image/jpeg", "image/jpg", "image/webp"]);
+
+/**
+ * Where to look for the engine.
+ *
+ * Resolution order is deliberate:
+ *
+ *   1. `ANALYSIS_ENGINE_URL` — an explicit override always wins.
+ *   2. `.engine.json` — written by `npm run api` with the address that
+ *      instance actually bound.
+ *   3. The default port, as a last resort.
+ *
+ * Step 2 exists because probing a port range is not equivalent, even though
+ * it looks it. A stale engine left listening on the default port answers a
+ * health check perfectly well, so probing can bind to an old process running
+ * old code instead of the instance just started — silently serving wrong
+ * results, which is the worst possible failure for this product. Reading the
+ * address the launcher recorded removes the guess.
+ */
+const EXPLICIT_URL = process.env["ANALYSIS_ENGINE_URL"];
+const DEFAULT_URL = "http://127.0.0.1:8000";
+const HANDSHAKE_FILE = ".engine.json";
+
+async function isHealthy(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${url}/health`, {
+      signal: AbortSignal.timeout(1500),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Reads the launcher's handshake file, if the engine is running locally. */
+async function readHandshakeUrl(): Promise<string | null> {
+  try {
+    const { readFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    // `process.cwd()` is web/ under `next dev`; the file sits at the repo root.
+    const raw = await readFile(join(process.cwd(), "..", HANDSHAKE_FILE), "utf8");
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "url" in parsed &&
+      typeof (parsed as { url: unknown }).url === "string"
+    ) {
+      return (parsed as { url: string }).url;
+    }
+  } catch {
+    // No file, unreadable, or malformed — fall through to the default.
+  }
+  return null;
+}
+
+async function resolveEngineUrl(): Promise<string | null> {
+  if (EXPLICIT_URL) {
+    return (await isHealthy(EXPLICIT_URL)) ? EXPLICIT_URL : null;
+  }
+
+  const handshake = await readHandshakeUrl();
+  if (handshake && (await isHealthy(handshake))) return handshake;
+
+  return (await isHealthy(DEFAULT_URL)) ? DEFAULT_URL : null;
+}
 
 export async function POST(request: Request): Promise<Response> {
   let form: FormData;
@@ -54,6 +118,17 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
+  const engineUrl = await resolveEngineUrl();
+  if (!engineUrl) {
+    return NextResponse.json(
+      {
+        detail:
+          "The analysis engine is not running. Start it in a second terminal with: npm run api",
+      },
+      { status: 503 },
+    );
+  }
+
   const upstream = new FormData();
   upstream.append("file", file, file.name);
 
@@ -63,7 +138,7 @@ export async function POST(request: Request): Promise<Response> {
   const timeout = setTimeout(() => controller.abort(), ENGINE_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${ENGINE_URL}/api/v1/analyze`, {
+    const response = await fetch(`${engineUrl}/api/v1/analyze`, {
       method: "POST",
       body: upstream,
       signal: controller.signal,
@@ -100,12 +175,19 @@ export async function POST(request: Request): Promise<Response> {
 
 /** Reports whether the engine is reachable, so the UI can say so up front. */
 export async function GET(): Promise<Response> {
+  const engineUrl = await resolveEngineUrl();
+  if (!engineUrl) return NextResponse.json({ available: false }, { status: 200 });
+
   try {
-    const response = await fetch(`${ENGINE_URL}/health`, {
+    const response = await fetch(`${engineUrl}/health`, {
       signal: AbortSignal.timeout(3000),
     });
     if (!response.ok) throw new Error("unhealthy");
-    return NextResponse.json({ available: true, ...(await response.json()) });
+    return NextResponse.json({
+      available: true,
+      url: engineUrl,
+      ...(await response.json()),
+    });
   } catch {
     return NextResponse.json({ available: false }, { status: 200 });
   }
