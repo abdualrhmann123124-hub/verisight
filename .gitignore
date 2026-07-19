@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Build output
+.next/
+out/
+build/
+dist/
+
+# Environment — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Python (api/, from Phase 4)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Testing
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+
+# Vercel / tooling caches
+.vercel
+*.tsbuildinfo
+next-env.d.ts

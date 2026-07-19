@@ -1,0 +1,305 @@
+/**
+ * VeriSight — Design Tokens
+ * =========================
+ * The single source of truth for every visual value in the product.
+ * No component may declare a raw colour, radius, duration, or shadow.
+ *
+ * Layers, in order of abstraction:
+ *   1. Primitive — the raw palette. Never referenced by a component.
+ *   2. Semantic  — meaning-bearing aliases that flip per theme.
+ *   3. Scales    — spacing, radius, type, motion (theme-independent).
+ *
+ * Semantic tokens deliberately avoid the `--color-*` prefix: that namespace
+ * belongs to Tailwind's `@theme inline` mapping in globals.css, and reusing
+ * it here would create circular variable references.
+ *
+ * Naming: `canvas` (page) → `surface` (cards) → `ink` (text) → `line`
+ * (borders). Distinctive enough to never collide with a Tailwind built-in,
+ * and it reads well as a utility: `bg-canvas`, `text-ink-muted`, `border-line`.
+ *
+ * Dark is the default theme; light is an explicit override.
+ */
+
+/* ══════════════════════════════════════════════════════════════════════
+   1. PRIMITIVES
+   Raw values only. Using one of these directly in a component means the
+   semantic layer is missing a token — add it there instead.
+   ══════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Graphite — the brand neutral. A faint blue cast keeps large dark
+     surfaces reading as engineered rather than muddy. Never pure black:
+     #000 smears on OLED and collapses the elevation hierarchy. */
+  --vs-graphite-950: #0b0d10;
+  --vs-graphite-900: #111418;
+  --vs-graphite-850: #171b21;
+  --vs-graphite-800: #1d222a;
+  --vs-graphite-750: #242b34;
+  --vs-graphite-700: #2b333d;
+  --vs-graphite-600: #3a434f;
+
+  /* Slate — supporting UI, and the deliberately neutral "inconclusive". */
+  --vs-slate-500: #64748b;
+  --vs-slate-400: #94a3b8;
+  --vs-slate-300: #cbd5e1;
+  --vs-slate-200: #e2e8f0;
+  --vs-slate-100: #f1f5f9;
+  --vs-slate-50: #f8fafc;
+
+  /* Electric Blue — the brand signal: CTAs, focus rings, active state. */
+  --vs-blue-700: #1d4ed8;
+  --vs-blue-600: #2563eb;
+  --vs-blue-500: #2d7ff9;
+  --vs-blue-400: #5b9dff;
+  --vs-blue-300: #93c0ff;
+
+  /* Soft Cyan — support accent: highlights, data viz, scan motifs. */
+  --vs-cyan-700: #0e7490;
+  --vs-cyan-600: #0891b2;
+  --vs-cyan-500: #22d3ee;
+  --vs-cyan-400: #67e8f9;
+  --vs-cyan-300: #a5f3fc;
+
+  /* Status. Each carries a light- and dark-tuned step, because a hue that
+     meets contrast on #0B0D10 will not meet it on #FFFFFF. */
+  /* The `-700` steps exist for light mode only. On white, the `-600` steps
+     measure 3.2–3.8:1 — fine for a large icon, short of AA for the label
+     text these tokens actually colour. */
+  --vs-emerald-700: #047857;
+  --vs-emerald-600: #059669;
+  --vs-emerald-500: #10b981;
+  --vs-emerald-400: #34d399;
+
+  --vs-amber-700: #b45309;
+  --vs-amber-600: #d97706;
+  --vs-amber-500: #f59e0b;
+  --vs-amber-400: #fbbf24;
+
+  --vs-rose-600: #e11d48;
+  --vs-rose-500: #f43f5e;
+  --vs-rose-400: #fb7185;
+
+  --vs-white: #ffffff;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   2. SEMANTIC — DARK (default)
+   ══════════════════════════════════════════════════════════════════════ */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces, ordered by elevation. In dark mode depth comes from surface
+     lightness and border contrast — a drop shadow is nearly invisible
+     against a near-black page and cannot carry the hierarchy alone. */
+  --canvas: var(--vs-graphite-950);
+  --surface: var(--vs-graphite-900);
+  --surface-raised: var(--vs-graphite-850);
+  --surface-overlay: var(--vs-graphite-800);
+  --surface-inset: #090b0e;
+
+  --line: var(--vs-graphite-750);
+  --line-strong: var(--vs-graphite-700);
+  --line-subtle: #191e25;
+
+  /* Off-white rather than #FFF: pure white on near-black vibrates and
+     tires the eye across a long forensic report. */
+  --ink: #e8ecf1;
+  --ink-muted: #9ba6b4;
+  /* Measured at 4.00:1 against --surface at #6b7684, which fails AA for
+     normal text. Lightened to 5.13:1 while staying a clear third step
+     below --ink-muted. */
+  --ink-faint: #7d8896;
+  --ink-inverse: var(--vs-graphite-950);
+
+  /* Brand — Deep Graphite. A neutral fill, not a CTA colour. */
+  --brand: var(--vs-graphite-800);
+  --brand-hover: var(--vs-graphite-750);
+  --on-brand: #e8ecf1;
+
+  --secondary: var(--vs-slate-500);
+  --on-secondary: var(--vs-white);
+
+  --accent: var(--vs-blue-500);
+  --accent-hover: var(--vs-blue-400);
+  --accent-active: var(--vs-blue-600);
+  /* Near-black, not white. White on this blue measures 3.81:1 — below AA
+     for normal text, which a button label is. Darkening the blue instead
+     would fix the label but drop `text-accent` on the canvas to 4.25:1,
+     so the label flips rather than the brand colour. Result: 5.11:1 for
+     both the button text and the accent used as text. */
+  --on-accent: var(--vs-graphite-950);
+  --accent-subtle: rgb(45 127 249 / 0.12);
+  --accent-ring: rgb(45 127 249 / 0.45);
+
+  --support: var(--vs-cyan-400);
+  --support-subtle: rgb(103 232 249 / 0.12);
+
+  --success: var(--vs-emerald-400);
+  --success-subtle: rgb(52 211 153 / 0.12);
+  --warning: var(--vs-amber-400);
+  --warning-subtle: rgb(251 191 36 / 0.12);
+  --danger: var(--vs-rose-400);
+  --danger-subtle: rgb(251 113 133 / 0.12);
+  --neutral: var(--vs-slate-400);
+  --neutral-subtle: rgb(148 163 184 / 0.12);
+
+  --focus: var(--vs-blue-400);
+
+  /* Glass — subtle. Never frosted to the point of illegibility. */
+  --glass-bg: rgb(23 27 33 / 0.72);
+  --glass-line: rgb(255 255 255 / 0.08);
+
+  /* Elevation: a hairline top highlight plus soft ambient shadow, rather
+     than a heavy cast shadow that would be invisible here anyway. */
+  --elevation-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --elevation-md: 0 4px 12px rgb(0 0 0 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --elevation-lg: 0 12px 32px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --elevation-xl: 0 24px 64px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --elevation-glow: 0 0 0 1px rgb(45 127 249 / 0.2), 0 8px 32px rgb(45 127 249 / 0.14);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   2b. SEMANTIC — LIGHT
+   Soft greys. Never a harsh white glare.
+   ══════════════════════════════════════════════════════════════════════ */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --canvas: #fafbfc;
+  --surface: var(--vs-white);
+  --surface-raised: var(--vs-white);
+  --surface-overlay: var(--vs-white);
+  --surface-inset: var(--vs-slate-50);
+
+  --line: #e4e8ee;
+  --line-strong: #cfd6e0;
+  --line-subtle: #eef1f5;
+
+  --ink: var(--vs-graphite-950);
+  --ink-muted: #5a6472;
+  /* #8b95a3 measured 2.93:1 on --canvas — an outright AA failure. #6b7684
+     landed at 4.46, still short. This clears at 4.93 on canvas / 5.11 on
+     surface, and stays visibly lighter than --ink-muted. */
+  --ink-faint: #646f7d;
+  --ink-inverse: var(--vs-white);
+
+  --brand: var(--vs-graphite-900);
+  --brand-hover: var(--vs-graphite-850);
+  --on-brand: var(--vs-white);
+
+  --secondary: var(--vs-slate-500);
+  --on-secondary: var(--vs-white);
+
+  /* Darkened one step: the dark-mode blue fails AA against white. */
+  --accent: var(--vs-blue-700);
+  --accent-hover: var(--vs-blue-600);
+  --accent-active: #1a44b8;
+  --on-accent: var(--vs-white);
+  --accent-subtle: rgb(29 78 216 / 0.08);
+  --accent-ring: rgb(29 78 216 / 0.35);
+
+  /* Status hues step down to `-700` here. These tokens colour label text,
+     which needs 4.5:1; the `-600` steps used in dark mode only reach
+     ~3.2–3.8:1 against white. The tinted `-subtle` fills stay keyed to the
+     brighter hue so the chip backgrounds keep their warmth. */
+  --support: var(--vs-cyan-700);
+  --support-subtle: rgb(8 145 178 / 0.08);
+
+  --success: var(--vs-emerald-700);
+  --success-subtle: rgb(5 150 105 / 0.08);
+  --warning: var(--vs-amber-700);
+  --warning-subtle: rgb(217 119 6 / 0.08);
+  --danger: var(--vs-rose-600);
+  --danger-subtle: rgb(225 29 72 / 0.08);
+  --neutral: var(--vs-slate-500);
+  --neutral-subtle: rgb(100 116 139 / 0.08);
+
+  --focus: var(--vs-blue-600);
+
+  --glass-bg: rgb(255 255 255 / 0.78);
+  --glass-line: rgb(11 13 16 / 0.07);
+
+  --elevation-sm: 0 1px 2px rgb(11 13 16 / 0.05);
+  --elevation-md: 0 4px 12px rgb(11 13 16 / 0.07);
+  --elevation-lg: 0 12px 32px rgb(11 13 16 / 0.09);
+  --elevation-xl: 0 24px 64px rgb(11 13 16 / 0.12);
+  --elevation-glow: 0 0 0 1px rgb(29 78 216 / 0.18), 0 8px 32px rgb(29 78 216 / 0.1);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   3. CONFIDENCE SPECTRUM
+   The product must never make an absolute claim, so a verdict is a
+   five-band spectrum rather than a pass/fail binary.
+   Colour is never the sole carrier of meaning — every band renders as
+   colour + icon + text label together (WCAG 1.4.1).
+   Band 3 is deliberately neutral: "inconclusive" is a legitimate,
+   scientifically honest outcome, not a failure state.
+   ══════════════════════════════════════════════════════════════════════ */
+:root,
+:root[data-theme="dark"] {
+  --verdict-authentic: var(--vs-emerald-400);
+  --verdict-authentic-subtle: rgb(52 211 153 / 0.12);
+  --verdict-leaning-authentic: var(--vs-cyan-400);
+  --verdict-leaning-authentic-subtle: rgb(103 232 249 / 0.12);
+  --verdict-inconclusive: var(--vs-slate-400);
+  --verdict-inconclusive-subtle: rgb(148 163 184 / 0.12);
+  --verdict-leaning-synthetic: var(--vs-amber-400);
+  --verdict-leaning-synthetic-subtle: rgb(251 191 36 / 0.12);
+  --verdict-synthetic: var(--vs-rose-400);
+  --verdict-synthetic-subtle: rgb(251 113 133 / 0.12);
+}
+
+:root[data-theme="light"] {
+  --verdict-authentic: var(--vs-emerald-700);
+  --verdict-authentic-subtle: rgb(5 150 105 / 0.08);
+  --verdict-leaning-authentic: var(--vs-cyan-700);
+  --verdict-leaning-authentic-subtle: rgb(8 145 178 / 0.08);
+  --verdict-inconclusive: var(--vs-slate-500);
+  --verdict-inconclusive-subtle: rgb(100 116 139 / 0.08);
+  --verdict-leaning-synthetic: var(--vs-amber-700);
+  --verdict-leaning-synthetic-subtle: rgb(217 119 6 / 0.08);
+  --verdict-synthetic: var(--vs-rose-600);
+  --verdict-synthetic-subtle: rgb(225 29 72 / 0.08);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   4. LAYOUT CONSTANTS
+   Scales for spacing, radius, type, and motion live in globals.css under
+   `@theme`, where Tailwind can generate utilities from them.
+   ══════════════════════════════════════════════════════════════════════ */
+:root {
+  --container-max: 80rem; /* 1280px */
+  --container-prose: 42rem; /*  672px — comfortable measure for body copy */
+  --header-height: 4rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   5. REDUCED MOTION
+   Honoured globally rather than per-component: one rule collapses every
+   CSS transition and keyframe animation in the app.
+   This is the *CSS half* of the guarantee. `MotionProvider` covers
+   JS-driven motion via `reducedMotion="user"`, but it has no authority
+   over CSS keyframes — the aurora drift, the skeleton shimmer, and the
+   tooltip pop are all CSS, so without this block they would keep moving
+   for a user who explicitly asked them not to.
+   ══════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Deliberate exception. A spinner is essential status feedback, not
+     decoration — frozen on its first frame it reads as a hung interface,
+     which is worse than the motion it was meant to spare. WCAG 2.3.3
+     scopes to non-essential animation, so this keeps turning, just
+     slower and without the accompanying transform elsewhere. */
+  .animate-spin {
+    animation-duration: 1.2s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
