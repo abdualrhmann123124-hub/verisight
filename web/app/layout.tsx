@@ -3,6 +3,7 @@ import { Instrument_Sans, Inter, JetBrains_Mono } from "next/font/google";
 
 import { MotionProvider } from "@/components/providers/motion-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { SITE } from "@/lib/site";
 
 import "./globals.css";
@@ -82,13 +83,21 @@ export default function RootLayout({
       <body className="min-h-dvh bg-canvas text-ink antialiased">
         <ThemeProvider>
           <MotionProvider>
-            <a
-              href="#main"
-              className="sr-only rounded-lg bg-accent px-4 py-2 text-on-accent focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50"
-            >
-              Skip to content
-            </a>
-            {children}
+            {/* Mounted at the root so any page can use a tooltip without
+                remembering to wrap itself — Radix throws outright when the
+                provider is missing, so a per-page provider turns a forgotten
+                wrapper into a crashed route. One provider also shares the
+                delay timer, so neighbouring tooltips open instantly after
+                the first. */}
+            <TooltipProvider>
+              <a
+                href="#main"
+                className="sr-only rounded-lg bg-accent px-4 py-2 text-on-accent focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50"
+              >
+                Skip to content
+              </a>
+              {children}
+            </TooltipProvider>
           </MotionProvider>
         </ThemeProvider>
       </body>

@@ -10,7 +10,7 @@ const FOOTER_NAV = [
   {
     heading: "Product",
     links: [
-      { href: "#analyze", label: "Analyze media" },
+      { href: "/analyze", label: "Analyze media" },
       { href: "#how-it-works", label: "How it works" },
       { href: "#technology", label: "Technology" },
       { href: "#example", label: "Example report" },

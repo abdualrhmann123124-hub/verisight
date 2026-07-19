@@ -98,7 +98,7 @@ export function Navbar() {
             Sign in
           </Button>
           <Button size="sm" asChild>
-            <a href="#analyze">Analyze media</a>
+            <Link href="/analyze">Analyze media</Link>
           </Button>
         </div>
 
@@ -156,9 +156,9 @@ export function Navbar() {
                   Sign in
                 </Button>
                 <Button asChild>
-                  <a href="#analyze" onClick={() => setMenuOpen(false)}>
+                  <Link href="/analyze" onClick={() => setMenuOpen(false)}>
                     Analyze media
-                  </a>
+                  </Link>
                 </Button>
               </div>
             </Container>

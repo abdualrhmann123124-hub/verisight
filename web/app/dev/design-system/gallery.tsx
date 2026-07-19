@@ -43,7 +43,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ToastProvider, useToast } from "@/components/ui/toast";
-import { Tooltip, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import { VERDICT_BANDS } from "@/lib/site";
 
 /* ── Local scaffolding for the gallery only ─────────────────────────── */
@@ -556,13 +556,12 @@ function GalleryBody() {
 }
 
 export function DesignSystemGallery() {
+  // TooltipProvider is mounted in the root layout, so it is not repeated here.
   return (
-    <TooltipProvider>
-      <ToastProvider>
-        <main id="main">
-          <GalleryBody />
-        </main>
-      </ToastProvider>
-    </TooltipProvider>
+    <ToastProvider>
+      <main id="main">
+        <GalleryBody />
+      </main>
+    </ToastProvider>
   );
 }
