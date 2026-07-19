@@ -52,21 +52,29 @@ in Python, mirrored by Zod schemas in TypeScript.
 
 ## Getting started
 
-Requires **Node ≥ 20.9** and **Python 3.12+** (for `api`, from Phase 4).
+Requires **Node ≥ 20.9**. (`api` additionally needs Python 3.12+, from Phase 4.)
 
 ```bash
-cd web
-npm install
+git clone https://github.com/abdualrhmann123124-hub/verisight.git
+cd verisight
+npm run setup        # installs dependencies — once only
 npm run dev          # http://localhost:3000
 ```
 
+Run every command from the **repository root**. The root scripts forward to
+`web/`, so there is no need to remember which directory holds the app.
+
 | Script | Purpose |
 | --- | --- |
+| `npm run setup` | Install dependencies (first time only) |
 | `npm run dev` | Dev server (Turbopack) |
 | `npm run build` | Production build |
 | `npm run verify` | Typecheck + lint + format check |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run format` | Apply Prettier |
+
+If port 3000 is busy, Next.js picks the next free port and prints it — or set
+one explicitly with `npm run dev -- -p 3005`.
 
 ### Design-system gallery
 
