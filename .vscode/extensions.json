@@ -1,0 +1,15 @@
+{
+  // Suggested when the workspace is opened. Each one is here because the
+  // project's settings actively depend on it, not as a general wishlist.
+  "recommendations": [
+    "esbenp.prettier-vscode", // formatOnSave is wired to this
+    "dbaeumer.vscode-eslint", // fixAll.eslint on save
+    "bradlc.vscode-tailwindcss", // v4 config lives in globals.css
+    "ms-python.python", // venv interpreter + pytest panel
+    "ms-python.vscode-pylance"
+  ],
+  "unwantedRecommendations": [
+    // Formats CSS in ways that conflict with Prettier's output.
+    "HookyQR.beautify"
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // The one to use: Terminal → Run Task → "Start VeriSight".
+      // Runs both services in their own terminal panes, so a crash in one is
+      // visible and restartable without touching the other.
+      "label": "Start VeriSight",
+      "dependsOn": ["web: dev server", "api: analysis engine"],
+      "dependsOrder": "parallel",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "web: dev server",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "presentation": {
+        "group": "verisight",
+        "panel": "dedicated",
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "api: analysis engine",
+      "type": "shell",
+      "command": "npm run api",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "presentation": {
+        "group": "verisight",
+        "panel": "dedicated",
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Verify (types + lint + format)",
+      "type": "shell",
+      "command": "npm run verify",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "test",
+      "presentation": { "panel": "dedicated", "reveal": "always" },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Test engine",
+      "type": "shell",
+      "command": "npm run test:api",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "test",
+      "presentation": { "panel": "dedicated", "reveal": "always" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Production build",
+      "type": "shell",
+      "command": "npm run build",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "build",
+      "presentation": { "panel": "dedicated", "reveal": "always" },
+      "problemMatcher": ["$tsc"]
+    }
+  ]
+}

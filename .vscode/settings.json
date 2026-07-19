@@ -1,0 +1,71 @@
+{
+  // ── Formatting ────────────────────────────────────────────────────────
+  // Prettier owns TS/TSX/CSS/JSON so formatting never differs between what
+  // the editor does and what `npm run verify` checks in CI.
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[css]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[markdown]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+
+  "prettier.configPath": "web/.prettierrc.json",
+  "eslint.workingDirectories": ["web"],
+  "eslint.validate": ["javascript", "typescript", "typescriptreact"],
+
+  // ── TypeScript ────────────────────────────────────────────────────────
+  // Use the workspace TypeScript, not the one bundled with VS Code, so
+  // editor diagnostics match `npm run typecheck` exactly.
+  "typescript.tsdk": "web/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+
+  // ── Python (analysis engine) ──────────────────────────────────────────
+  // Points at the project venv so imports resolve and tests are runnable
+  // from the Test panel without activating anything by hand.
+  "python.defaultInterpreterPath": "${workspaceFolder}/api/.venv/Scripts/python.exe",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["api/tests"],
+  "python.analysis.extraPaths": ["api"],
+
+  // ── Tailwind ──────────────────────────────────────────────────────────
+  // Tailwind v4 keeps its config in CSS, so the extension needs pointing at
+  // the stylesheet rather than a tailwind.config file.
+  "tailwindCSS.experimental.configFile": "web/app/globals.css",
+  "tailwindCSS.includeLanguages": { "typescriptreact": "javascript" },
+  // Recognise our helpers so class strings inside them get IntelliSense.
+  "tailwindCSS.classFunctions": ["cn", "cva"],
+
+  // ── Editor ergonomics ─────────────────────────────────────────────────
+  "editor.rulers": [90],
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // Hide build output and dependencies from the explorer and search — they
+  // otherwise dominate every result.
+  "files.exclude": {
+    "**/.next": true,
+    "**/node_modules": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/api/.venv": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/package-lock.json": true,
+    "**/api/.venv": true
+  },
+
+  // The handshake file is runtime state, not something to edit.
+  "files.readonlyInclude": { "**/.engine.json": true }
+}
