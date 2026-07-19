@@ -44,6 +44,18 @@
   // Recognise our helpers so class strings inside them get IntelliSense.
   "tailwindCSS.classFunctions": ["cn", "cva"],
 
+  // ── Terminal ──────────────────────────────────────────────────────────
+  // Command Prompt, not PowerShell.
+  //
+  // PowerShell refuses to run `npm.ps1` when the execution policy is
+  // Restricted, which is the Windows default. Rather than ask anyone to
+  // loosen a machine-wide security setting so they can start a dev server,
+  // the workspace uses a shell that is not subject to that policy. `npm`
+  // resolves to `npm.cmd` here and works unchanged.
+  //
+  // Switch per-terminal any time with the dropdown beside the + button.
+  "terminal.integrated.defaultProfile.windows": "Command Prompt",
+
   // ── Editor ergonomics ─────────────────────────────────────────────────
   "editor.rulers": [90],
   "files.eol": "\n",

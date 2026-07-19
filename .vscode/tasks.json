@@ -1,10 +1,21 @@
 {
   "version": "2.0.0",
+
+  // Tasks run as processes, not shell commands.
+  //
+  // VS Code's default task shell on Windows is PowerShell, which refuses to
+  // run `npm.ps1` when the machine's execution policy is Restricted — the
+  // default on many Windows installs. Spawning the executable directly skips
+  // the shell entirely, so the tasks work without anyone having to relax a
+  // system-wide security setting to run a dev server.
+  //
+  // `npm` resolves to `npm.cmd` on Windows, which is a batch file and is not
+  // subject to the PowerShell policy at all.
   "tasks": [
     {
-      // The one to use: Terminal → Run Task → "Start VeriSight".
-      // Runs both services in their own terminal panes, so a crash in one is
-      // visible and restartable without touching the other.
+      // The one to use: Ctrl+Shift+B, or Terminal → Run Task → Start VeriSight.
+      // Both services start in their own terminal pane, so a crash in one is
+      // visible and restartable without disturbing the other.
       "label": "Start VeriSight",
       "dependsOn": ["web: dev server", "api: analysis engine"],
       "dependsOrder": "parallel",
@@ -13,8 +24,10 @@
     },
     {
       "label": "web: dev server",
-      "type": "shell",
-      "command": "npm run dev",
+      "type": "process",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "windows": { "command": "npm.cmd" },
       "options": { "cwd": "${workspaceFolder}" },
       "isBackground": true,
       "presentation": {
@@ -26,8 +39,10 @@
     },
     {
       "label": "api: analysis engine",
-      "type": "shell",
-      "command": "npm run api",
+      "type": "process",
+      "command": "npm",
+      "args": ["run", "api"],
+      "windows": { "command": "npm.cmd" },
       "options": { "cwd": "${workspaceFolder}" },
       "isBackground": true,
       "presentation": {
@@ -39,8 +54,10 @@
     },
     {
       "label": "Verify (types + lint + format)",
-      "type": "shell",
-      "command": "npm run verify",
+      "type": "process",
+      "command": "npm",
+      "args": ["run", "verify"],
+      "windows": { "command": "npm.cmd" },
       "options": { "cwd": "${workspaceFolder}" },
       "group": "test",
       "presentation": { "panel": "dedicated", "reveal": "always" },
@@ -48,8 +65,10 @@
     },
     {
       "label": "Test engine",
-      "type": "shell",
-      "command": "npm run test:api",
+      "type": "process",
+      "command": "npm",
+      "args": ["run", "test:api"],
+      "windows": { "command": "npm.cmd" },
       "options": { "cwd": "${workspaceFolder}" },
       "group": "test",
       "presentation": { "panel": "dedicated", "reveal": "always" },
@@ -57,8 +76,10 @@
     },
     {
       "label": "Production build",
-      "type": "shell",
-      "command": "npm run build",
+      "type": "process",
+      "command": "npm",
+      "args": ["run", "build"],
+      "windows": { "command": "npm.cmd" },
       "options": { "cwd": "${workspaceFolder}" },
       "group": "build",
       "presentation": { "panel": "dedicated", "reveal": "always" },
