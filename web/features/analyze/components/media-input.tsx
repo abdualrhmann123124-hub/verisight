@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -34,6 +35,7 @@ import {
   formatBytes,
   type UrlCheck,
 } from "@/features/analyze/lib/media-source";
+import { setPendingFile } from "@/features/analyze/lib/pending-file";
 
 const EXAMPLE_URL = "https://images.example.com/press-photo-2024.jpg";
 
@@ -42,16 +44,20 @@ interface SelectedFile {
   size: number;
   kind: "image" | "video";
   previewUrl: string;
+  /** Kept so the chosen file can be handed to the workspace on analyze. */
+  source: File;
 }
 
 /**
- * The primary input surface: paste a URL, pick a file, or drop one.
+ * The landing page's input surface: pick a file, drop one, or paste a link.
  *
- * Phase 2 delivers the full input contract — validation, previews, and every
- * feedback state. The analyze action is intentionally not wired to a backend
- * yet (Phase 4 builds the engine); rather than fake a result, the button
- * reports honestly that analysis is not yet available. A convincing fake here
- * would be the one thing this product cannot afford.
+ * Analysis itself happens in the workspace at `/analyze`, which owns the
+ * preflight pipeline and the engine call. This component hands the file over
+ * and navigates rather than re-implementing that flow, so there is one
+ * analysis path rather than two that drift.
+ *
+ * Links are recognised but not analyzed — see `LINK_ANALYSIS_AVAILABLE`. The
+ * field says so plainly instead of accepting a URL that leads nowhere.
  */
 export function MediaInput() {
   const [url, setUrl] = useState("");
@@ -62,6 +68,7 @@ export function MediaInput() {
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const router = useRouter();
   const inputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Drag events fire for every child element, so a boolean flag flickers.
@@ -93,6 +100,7 @@ export function MediaInput() {
         size: candidate.size,
         kind: result.kind,
         previewUrl: URL.createObjectURL(candidate),
+        source: candidate,
       };
     });
   }, []);
@@ -151,21 +159,21 @@ export function MediaInput() {
     setFileError(null);
   }, []);
 
-  const hasValidUrl = check.status === "platform" || check.status === "direct";
-  const canAnalyze = Boolean(file) || hasValidUrl;
+  const _hasRecognisedUrl = check.status === "platform" || check.status === "direct";
+  // Only a picked file can be analyzed. Link analysis is not implemented, and
+  // enabling the button for a URL would promise something that cannot happen.
+  const canAnalyze = Boolean(file);
 
   const handleAnalyze = useCallback(() => {
+    if (!file) return;
     setPending(true);
     setNotice(null);
-    // Deliberately honest: the analysis engine ships in Phase 4. Showing a
-    // fabricated confidence score would undermine the product's entire premise.
-    window.setTimeout(() => {
-      setPending(false);
-      setNotice(
-        "Input accepted. The analysis engine is still in development — no result is available yet.",
-      );
-    }, 900);
-  }, []);
+    // Hand the file to the workspace, which owns the preflight pipeline and
+    // the engine call. Duplicating that here would mean two implementations
+    // of the same flow drifting apart.
+    setPendingFile(file.source);
+    router.push("/analyze");
+  }, [file, router]);
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -423,19 +431,30 @@ function StatusLine({
   }
 
   switch (check.status) {
+    // A recognised link is still not an analysable one. Saying only
+    // "YouTube link detected" reads as success and sets up a dead end, so the
+    // limitation is stated in the same breath as the recognition.
     case "platform":
       return (
-        <Message tone="success" icon={<CheckCircle2 />}>
-          {check.platform.label} link detected.
-          {"note" in check.platform && check.platform.note ? (
-            <span className="text-ink-faint"> {check.platform.note}</span>
-          ) : null}
+        <Message tone="warning" icon={<Link2 />}>
+          {check.platform.label} link recognised — but analyzing links is not supported
+          yet.
+          <span className="text-ink-faint">
+            {check.platform.kind === "video"
+              ? " Video analysis is also still in development. Upload an image file instead."
+              : " Save the image and upload the file instead."}
+          </span>
         </Message>
       );
     case "direct":
       return (
-        <Message tone="success" icon={<CheckCircle2 />}>
-          Direct media link detected on {check.hostname}.
+        <Message tone="warning" icon={<Link2 />}>
+          Direct media link on {check.hostname} — but analyzing links is not supported
+          yet.
+          <span className="text-ink-faint">
+            {" "}
+            Download the file and upload it instead.
+          </span>
         </Message>
       );
     case "insecure":

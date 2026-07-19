@@ -26,35 +26,64 @@ export const MAX_IMAGE_BYTES = 25 * 1024 * 1024; // 25 MB
 export const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB
 
 /**
- * Platforms whose public media URLs the analyzer will attempt to resolve.
+ * Whether the platform can fetch and analyze media from a URL.
  *
- * `note` is shown when a link from that platform cannot be fetched. These are
- * honest, specific limitations rather than a generic failure — a user whose
- * private Instagram link fails deserves to know it failed because it is
- * private, not because "something went wrong".
+ * It cannot. There is no URL-fetching code anywhere in the project, and the
+ * engine accepts image bytes only. This flag exists so the UI states that
+ * plainly in one place rather than implying otherwise — recognising a link
+ * and analyzing it are very different things, and a status line reading
+ * "YouTube link detected" invites the user to expect the second.
+ *
+ * Flipping this to true requires: server-side fetching with SSRF protection,
+ * per-platform extraction (most block automated access to post pages), and —
+ * for every video platform in the list below — a video pipeline the engine
+ * does not have.
+ */
+export const LINK_ANALYSIS_AVAILABLE = false;
+
+/**
+ * Platforms whose links the input can *recognise*.
+ *
+ * Recognition is genuinely useful: it lets the field tell a user their link
+ * was understood and what would be needed to analyze it. It is not a claim
+ * that analysis works — see LINK_ANALYSIS_AVAILABLE.
+ *
+ * `kind` records what a link from each platform actually yields, because the
+ * engine handles images only. Even once fetching lands, the video platforms
+ * here need frame extraction and temporal aggregation first.
  */
 export const SUPPORTED_PLATFORMS = [
-  { id: "x", label: "X", hosts: ["x.com", "twitter.com", "t.co"] },
+  { id: "x", label: "X", hosts: ["x.com", "twitter.com", "t.co"], kind: "mixed" },
   {
     id: "instagram",
     label: "Instagram",
     hosts: ["instagram.com", "cdninstagram.com"],
-    note: "Only public posts can be fetched.",
+    kind: "mixed",
   },
-  { id: "tiktok", label: "TikTok", hosts: ["tiktok.com"] },
+  { id: "tiktok", label: "TikTok", hosts: ["tiktok.com"], kind: "video" },
   {
     id: "facebook",
     label: "Facebook",
     hosts: ["facebook.com", "fb.watch"],
-    note: "Only public posts can be fetched.",
+    kind: "mixed",
   },
-  { id: "threads", label: "Threads", hosts: ["threads.net", "threads.com"] },
-  { id: "reddit", label: "Reddit", hosts: ["reddit.com", "redd.it"] },
-  { id: "youtube", label: "YouTube", hosts: ["youtube.com", "youtu.be"] },
-  { id: "vimeo", label: "Vimeo", hosts: ["vimeo.com"] },
-  { id: "imgur", label: "Imgur", hosts: ["imgur.com"] },
-  { id: "telegram", label: "Telegram", hosts: ["t.me", "telegram.me"] },
-  { id: "discord", label: "Discord", hosts: ["cdn.discordapp.com"] },
+  {
+    id: "threads",
+    label: "Threads",
+    hosts: ["threads.net", "threads.com"],
+    kind: "mixed",
+  },
+  { id: "reddit", label: "Reddit", hosts: ["reddit.com", "redd.it"], kind: "mixed" },
+  { id: "youtube", label: "YouTube", hosts: ["youtube.com", "youtu.be"], kind: "video" },
+  { id: "vimeo", label: "Vimeo", hosts: ["vimeo.com"], kind: "video" },
+  { id: "imgur", label: "Imgur", hosts: ["imgur.com"], kind: "image" },
+  { id: "telegram", label: "Telegram", hosts: ["t.me", "telegram.me"], kind: "mixed" },
+  {
+    id: "discord",
+    label: "Discord",
+    hosts: ["cdn.discordapp.com"],
+    kind: "mixed",
+  },
 ] as const;
 
 export type PlatformId = (typeof SUPPORTED_PLATFORMS)[number]["id"];

@@ -30,6 +30,7 @@ import { MediaFactsPanel, MediaPreview } from "@/features/analyze/components/med
 import { AssessmentReport } from "@/features/analyze/components/assessment-report";
 import { StageProgress } from "@/features/analyze/components/stage-progress";
 import { FILE_ACCEPT } from "@/features/analyze/lib/media-source";
+import { takePendingFile } from "@/features/analyze/lib/pending-file";
 import {
   EngineRejectedError,
   EngineUnavailableError,
@@ -180,6 +181,23 @@ export function AnalyzeWorkspace() {
     },
     [patchStage],
   );
+
+  // Pick up a file chosen on the landing page and start immediately, so the
+  // user is not asked to select the same file twice after navigating here.
+  //
+  // The analysis is scheduled rather than called inline: starting it in the
+  // effect body would set state synchronously during commit and cascade a
+  // second render before the first has painted, so the workspace would appear
+  // already mid-run instead of visibly starting. A microtask lets the idle
+  // layout paint first, then the pipeline takes over.
+  //
+  // `takePendingFile` clears as it reads, so this cannot re-run an analysis
+  // nobody asked for if the user navigates back here later.
+  useEffect(() => {
+    const handedOver = takePendingFile();
+    if (!handedOver) return;
+    queueMicrotask(() => void analyze(handedOver));
+  }, [analyze]);
 
   const handlePick = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
