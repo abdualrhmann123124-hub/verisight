@@ -42,3 +42,7 @@ next-env.d.ts
 
 # Root has no dependencies; its lockfile only confuses workspace-root inference
 /package-lock.json
+
+# Python virtual environment (api/)
+.venv/
+.pytest_cache/

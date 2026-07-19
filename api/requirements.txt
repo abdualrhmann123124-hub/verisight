@@ -1,0 +1,17 @@
+# VeriSight analysis engine
+#
+# Deliberately lean. Every dependency here earns its place by doing real
+# forensic work; nothing is included speculatively for a future phase.
+#
+# Notably absent: torch. A learned classifier is a legitimate future signal,
+# but a ~2.5 GB dependency should not land before there is a validated model
+# to run with it. The analyzers below are classical, inspectable, and produce
+# measurements that can be reasoned about — which is the right foundation.
+
+fastapi==0.139.2
+uvicorn[standard]==0.41.0
+python-multipart==0.0.32   # multipart/form-data parsing for uploads
+pillow==12.3.0             # image decode, JPEG quantization tables, ELA resave
+numpy==2.5.1               # FFT, noise residual, array statistics
+pydantic==2.13.0
+pydantic-settings==2.13.0
