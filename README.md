@@ -22,8 +22,10 @@ correct answer.
 
 The governing rule for every contributor: **every number shown to a user must
 trace back to a real measurement from a real analyzer.** Where signals are
-combined by weighting, the weights are documented and calibrated. Nothing is
-invented to make output look more confident than the evidence supports.
+combined by weighting, the weights are documented in source and the composite
+is labelled uncalibrated until it has been validated against a labelled corpus.
+Nothing is invented to make output look more confident than the evidence
+supports.
 
 ---
 
@@ -34,7 +36,7 @@ Two applications, one repository.
 ```
 verisight/
 ├── web/    Next.js 16 — UI, BFF, persistence (owns Prisma + PostgreSQL)
-└── api/    FastAPI — stateless analysis engine   [Phase 4]
+└── api/    FastAPI — stateless forensic analysis engine
 ```
 
 **`web` owns all persistence; `api` is pure compute.** Prisma is TypeScript-native
@@ -52,29 +54,44 @@ in Python, mirrored by Zod schemas in TypeScript.
 
 ## Getting started
 
-Requires **Node ≥ 20.9**. (`api` additionally needs Python 3.12+, from Phase 4.)
+Requires **Node ≥ 20.9** and **Python ≥ 3.12**.
 
 ```bash
 git clone https://github.com/abdualrhmann123124-hub/verisight.git
 cd verisight
-npm run setup        # installs dependencies — once only
-npm run dev          # http://localhost:3000
+
+npm run setup        # web dependencies — once only
+npm run setup:api    # engine venv + dependencies — once only
+```
+
+Then run the two services in **separate terminals**:
+
+```bash
+npm run dev          # web    → http://localhost:3000
+npm run api          # engine → http://127.0.0.1:8000
 ```
 
 Run every command from the **repository root**. The root scripts forward to
-`web/`, so there is no need to remember which directory holds the app.
+`web/` and `api/`, so there is no need to remember which directory holds what.
+
+The web app works without the engine — preflight (hash, dimensions, metadata)
+runs entirely in the browser. Without the engine running you get those facts
+and an explicit "engine offline" notice instead of an assessment, never a
+placeholder score.
 
 | Script | Purpose |
 | --- | --- |
-| `npm run setup` | Install dependencies (first time only) |
-| `npm run dev` | Dev server (Turbopack) |
+| `npm run setup` / `setup:api` | Install dependencies (first time only) |
+| `npm run dev` | Web dev server (Turbopack) |
+| `npm run api` | Analysis engine (add `--reload` to watch files) |
 | `npm run build` | Production build |
 | `npm run verify` | Typecheck + lint + format check |
-| `npm run typecheck` | `tsc --noEmit` |
+| `npm run test:api` | Engine test suite |
 | `npm run format` | Apply Prettier |
 
 If port 3000 is busy, Next.js picks the next free port and prints it — or set
-one explicitly with `npm run dev -- -p 3005`.
+one explicitly with `npm run dev -- -p 3005`. The engine's port and the URL the
+web app calls are overridable with `API_PORT` and `ANALYSIS_ENGINE_URL`.
 
 ### Design-system gallery
 
@@ -86,6 +103,41 @@ Every primitive in every state, in both themes. It is the fastest way to spot a
 regression — a spacing or contrast change that is easy to miss on a product page
 is obvious with the whole system side by side. The route returns 404 in
 production and is marked `noindex`.
+
+---
+
+## The analysis engine
+
+Five analyzers run on every image, each producing measurements you can inspect
+in the report:
+
+| Analyzer | What it measures |
+| --- | --- |
+| Metadata & provenance | EXIF tags plus C2PA / generator provenance markers |
+| Compression fingerprint | JPEG quantization table shape vs the IJG baseline |
+| Error level analysis | Block-wise re-encode error, as spatial inconsistency |
+| Frequency domain | Radially-averaged FFT profile, detrended |
+| Sensor noise | Laplacian residual binned by luminance |
+
+An analyzer that has nothing useful to say **abstains** rather than returning a
+neutral result — a PNG has no quantization tables to read, and diluting the
+aggregate with a non-answer would be worse than a smaller sample.
+
+### On the score
+
+`calibrated` is `false`, and the UI says so on every report.
+
+The headline number is a **documented weighted sum of heuristics**, not a
+probability. The weights reflect what each signal can actually carry — a signed
+provenance marker is specific and hard to fake by accident, while Error Level
+Analysis is famously confounded by ordinary texture — but they have not been
+validated against a labelled corpus. Until they are, the score is a pointer
+toward the evidence, not a measurement in its own right.
+
+When evidence is thin the verdict band widens toward *inconclusive*, so a single
+surviving signal cannot produce a confident answer. A heavily compressed
+screenshot destroys most of what these analyzers read, and "cannot tell" is the
+correct output in that case.
 
 ---
 
@@ -139,9 +191,9 @@ Non-negotiable, and verified rather than assumed:
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 1 | Foundation — tooling, tokens, theme, UI + motion primitives | ✅ Complete |
-| 2 | Layout shell + landing page | Next |
-| 3 | Upload & URL input experience |  |
-| 4 | FastAPI analysis engine — forensics, inference, explainability |  |
+| 2 | Layout shell + landing page | Complete |
+| 3 | Upload & URL input experience | Complete |
+| 4 | FastAPI analysis engine — five forensic analyzers, honest aggregation | Complete |
 | 5 | Report page — confidence card, findings, timeline |  |
 | 6 | History, dashboard, search, PDF export |  |
 | 7 | Persistence, OWASP hardening, rate limiting |  |

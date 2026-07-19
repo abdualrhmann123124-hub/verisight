@@ -7,13 +7,16 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "npm --prefix web run dev",
+    "api": "node scripts/run-api.mjs",
     "build": "npm --prefix web run build",
     "start": "npm --prefix web run start",
     "lint": "npm --prefix web run lint",
     "typecheck": "npm --prefix web run typecheck",
     "format": "npm --prefix web run format",
     "verify": "npm --prefix web run verify",
-    "setup": "npm --prefix web install"
+    "test:api": "node scripts/run-tests.mjs",
+    "setup": "npm --prefix web install",
+    "setup:api": "node scripts/setup-api.mjs"
   },
   "engines": {
     "node": ">=20.9.0"

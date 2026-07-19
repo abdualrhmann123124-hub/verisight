@@ -27,8 +27,15 @@ import { Card } from "@/components/ui/card";
 import { DURATION, EASE_OUT_EXPO, SPRING_LAYOUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { MediaFactsPanel, MediaPreview } from "@/features/analyze/components/media-facts";
+import { AssessmentReport } from "@/features/analyze/components/assessment-report";
 import { StageProgress } from "@/features/analyze/components/stage-progress";
 import { FILE_ACCEPT } from "@/features/analyze/lib/media-source";
+import {
+  EngineRejectedError,
+  EngineUnavailableError,
+  requestAnalysis,
+  type AnalysisResponse,
+} from "@/features/analyze/lib/engine";
 import {
   INITIAL_STAGES,
   PreflightError,
@@ -49,20 +56,23 @@ interface Failure {
 /**
  * The analysis workspace.
  *
- * Preflight runs entirely in the browser and does real work — hashing,
- * decoding, metadata parsing. What it deliberately does *not* do is produce a
- * verdict: that requires the forensic and model analyses in `api/`, which do
- * not exist yet.
+ * Two stages, deliberately separated. Preflight runs in the browser and
+ * establishes what the file *is* — hash, dimensions, embedded metadata — and
+ * never leaves the device. The forensic analyzers then run in `api/`, which
+ * needs the bytes.
  *
- * So the final stage resolves to `blocked` with a plain explanation rather
- * than a spinner that never finishes or, worse, a fabricated confidence
- * score. For a product whose entire premise is not overstating what it knows,
- * a convincing fake here would undermine everything else in the build.
+ * If the engine is unreachable the handoff stage resolves to `blocked` with
+ * an actionable message and the preflight facts are still shown, because they
+ * are real and independently useful. No score is displayed in that case: for
+ * a product whose premise is not overstating what it knows, a placeholder
+ * number would undermine everything else in the build.
  */
 export function AnalyzeWorkspace() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [stages, setStages] = useState<readonly Stage[]>(INITIAL_STAGES);
   const [facts, setFacts] = useState<MediaFacts | null>(null);
+  const [assessment, setAssessment] = useState<AnalysisResponse | null>(null);
+  const [engineNote, setEngineNote] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -103,6 +113,8 @@ export function AnalyzeWorkspace() {
     setPhase("idle");
     setStages(INITIAL_STAGES);
     setFacts(null);
+    setAssessment(null);
+    setEngineNote(null);
     setFailure(null);
   }, []);
 
@@ -111,6 +123,8 @@ export function AnalyzeWorkspace() {
       setPhase("running");
       setStages(INITIAL_STAGES);
       setFacts(null);
+      setAssessment(null);
+      setEngineNote(null);
       setFailure(null);
       setObjectUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
@@ -123,14 +137,31 @@ export function AnalyzeWorkspace() {
         });
         setFacts(result);
 
-        // Honest terminal state: the engine that would produce a verdict is
-        // not built yet, and the UI says exactly that.
-        patchStage(
-          "handoff",
-          "blocked",
-          undefined,
-          "Engine not yet available — no assessment produced.",
-        );
+        // Hand off to the analysis engine. If it is not running, the stage
+        // resolves to `blocked` with an actionable message rather than
+        // failing the whole run — the preflight facts above are still valid
+        // and worth showing.
+        patchStage("handoff", "active");
+        const startedAt = performance.now();
+        try {
+          const analysis = await requestAnalysis(file);
+          setAssessment(analysis);
+          patchStage(
+            "handoff",
+            "done",
+            Math.round(performance.now() - startedAt),
+            `${analysis.assessment.findings.length} analyzers reported`,
+          );
+        } catch (engineError) {
+          const blockedNote =
+            engineError instanceof EngineUnavailableError
+              ? "Engine offline — run `npm run api` to enable full analysis."
+              : engineError instanceof EngineRejectedError
+                ? engineError.message
+                : "The engine could not analyze this file.";
+          patchStage("handoff", "blocked", undefined, blockedNote);
+          setEngineNote(blockedNote);
+        }
         setPhase("complete");
       } catch (error) {
         const failureInfo =
@@ -311,7 +342,11 @@ export function AnalyzeWorkspace() {
                 </Card>
               )}
 
-              {phase === "complete" && (
+              {phase === "complete" && assessment && (
+                <AssessmentReport result={assessment} />
+              )}
+
+              {phase === "complete" && !assessment && (
                 <Reveal>
                   <Card variant="surface" padding="lg" className="edge-highlight">
                     <div className="flex flex-col gap-4">
@@ -319,24 +354,26 @@ export function AnalyzeWorkspace() {
                         Assessment unavailable
                       </Badge>
                       <h2 className="font-display text-h3 text-ink">
-                        Preflight complete — no verdict yet
+                        Preflight complete — engine did not respond
                       </h2>
                       <p className="max-w-prose text-body text-ink-muted">
                         Your file was read, fingerprinted, decoded, and its metadata
-                        parsed — all locally. Producing an authenticity estimate needs the
-                        forensic and model analyses, which are still being built.
+                        parsed locally. The forensic analyzers run in a separate service,
+                        which is not reachable right now.
                       </p>
-                      <div className="flex gap-3 rounded-xl bg-surface-inset p-4">
-                        <ShieldQuestion
-                          className="mt-0.5 size-4 shrink-0 text-warning"
-                          aria-hidden="true"
-                        />
-                        <p className="text-body-sm text-ink-muted">
-                          VeriSight will not show a confidence score until there is a real
-                          measurement behind it. A number invented to fill this space
-                          would be worse than no number at all.
-                        </p>
-                      </div>
+                      {engineNote && (
+                        <div className="flex gap-3 rounded-xl bg-surface-inset p-4">
+                          <ShieldQuestion
+                            className="mt-0.5 size-4 shrink-0 text-warning"
+                            aria-hidden="true"
+                          />
+                          <p className="text-body-sm text-ink-muted">{engineNote}</p>
+                        </div>
+                      )}
+                      <p className="text-caption text-ink-faint">
+                        No score is shown because none was produced. A number invented to
+                        fill this space would be worse than no number at all.
+                      </p>
                     </div>
                   </Card>
                 </Reveal>
