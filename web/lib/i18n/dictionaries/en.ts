@@ -90,6 +90,13 @@ export const en = {
     complete: "Preflight complete",
     ready: "Ready",
     stopped: "Analysis stopped",
+    analyzersReported: "{count} analyzers reported",
+    // Announced after each stage name for screen readers.
+    statusPending: "pending",
+    statusActive: "running",
+    statusDone: "done",
+    statusFailed: "failed",
+    statusBlocked: "skipped",
   },
 
   facts: {
@@ -136,6 +143,125 @@ export const en = {
     showMeasurements: "Show raw measurements",
     hideMeasurements: "Hide raw measurements",
     limitationsTitle: "What this cannot tell you",
+  },
+
+  // Engine output, keyed by the stable codes the analyzers emit. The engine
+  // also sends English prose; these are what the UI shows so a report reads
+  // in one language rather than switching to English at the findings.
+  analyzers: {
+    metadata: "Metadata & provenance",
+    quantization: "Compression fingerprint",
+    ela: "Error level analysis",
+    spectral: "Frequency domain",
+    noise: "Sensor noise",
+  },
+
+  outcomes: {
+    "metadata.generator": {
+      summary: "The file carries provenance data associated with AI generation.",
+      caveat:
+        "Markers like these are embedded voluntarily by the generator and can be stripped, so their absence proves nothing.",
+    },
+    "metadata.camera": {
+      summary: "Camera metadata is present, consistent with a photograph.",
+      caveat:
+        "EXIF fields are editable with ordinary tools, so camera tags can be copied onto a generated image.",
+    },
+    "metadata.editor": {
+      summary: "The file was exported by editing software, with no camera signature.",
+      caveat:
+        "Editing is routine for published photography and is not itself evidence of fabrication.",
+    },
+    "metadata.none": {
+      summary: "No embedded metadata was found.",
+      caveat:
+        "Weak evidence on its own: X, Instagram, WhatsApp and most other platforms strip metadata from every upload.",
+    },
+    "metadata.partial": {
+      summary: "Metadata is present, but none of it identifies a camera or a generator.",
+      caveat: "Partial metadata is common after resizing or format conversion.",
+    },
+    "quantization.nonstandard": {
+      summary:
+        "The quantization table does not match the standard encoder baseline, indicating the file was re-encoded by software.",
+      caveat:
+        "Re-encoding happens whenever an image is edited, resized, or uploaded to a platform. It does not indicate fabrication.",
+    },
+    "quantization.standard": {
+      summary:
+        "The quantization table follows the standard encoder baseline, consistent with a camera or a conventional export.",
+      caveat: "Common encoders are easy to imitate; this is supporting evidence only.",
+    },
+    "ela.uneven": {
+      summary:
+        "Compression error is unevenly distributed across the frame, which can indicate regions from different sources.",
+      caveat:
+        "Highly textured or high-contrast areas produce the same pattern without any editing. Treat as a prompt to look closer, not a finding.",
+    },
+    "ela.even": {
+      summary: "Compression error is spread evenly, with no obvious spliced regions.",
+      caveat:
+        "Uniform error is expected after any full re-encode, including one applied to a composite.",
+    },
+    "spectral.periodic": {
+      summary:
+        "The frequency spectrum departs sharply from a natural falloff, consistent with the periodic structure generative upsampling leaves.",
+      caveat:
+        "Repetitive real-world texture — fabric, brickwork, screens, halftone print — produces similar structure.",
+    },
+    "spectral.flat": {
+      summary:
+        "The spectrum is too smooth to carry usable evidence, typically the result of heavy compression or resizing.",
+      caveat: "Re-compression destroys the artefacts this analysis looks for.",
+    },
+    "spectral.natural": {
+      summary:
+        "The spectrum falls off smoothly, as expected from optics and a camera sensor.",
+      caveat: "Some generators reproduce a natural falloff convincingly.",
+    },
+    "noise.denoised": {
+      summary:
+        "Almost no sensor noise is present, which is unusual for a camera-captured image.",
+      caveat:
+        "Denoising, upscaling, and aggressive compression all remove noise from genuine photographs.",
+    },
+    "noise.uniform": {
+      summary:
+        "Noise is unnaturally uniform across bright and dark regions, where sensor noise would normally vary with brightness.",
+      caveat: "Flat lighting or a narrow tonal range can suppress this variation.",
+    },
+    "noise.varies": {
+      summary:
+        "Noise varies with local brightness, consistent with a physical camera sensor.",
+      caveat: "Synthetic noise can be added deliberately to imitate this.",
+    },
+  },
+
+  summaries: {
+    "no-findings":
+      "No analyzer produced a usable measurement for this file, so no assessment can be offered.",
+    "thin-evidence":
+      "Too little forensic evidence survived in this file to support an assessment. This usually means it has been compressed, resized, or screenshotted — all of which erase the traces these analyses rely on.",
+    disagreement:
+      "The analyses disagree, with indicators pointing in both directions and none strong enough to settle it. Treat this as genuinely undetermined rather than as a weak result in either direction.",
+    "leaning-synthetic":
+      "The strongest indicators — {drivers} — lean toward this being generated media. This is a confidence estimate built from several independent measurements, not proof.",
+    "leaning-authentic":
+      "The strongest indicators — {drivers} — lean toward this being camera-captured media. This is a confidence estimate built from several independent measurements, not proof.",
+    conflictNote:
+      " Note that at least one analysis pointed the other way; the per-signal findings below show where they disagree.",
+    fallbackDrivers: "the available signals",
+  },
+
+  limits: {
+    "open-problem":
+      "Detection of AI-generated media is an open research problem. This tool reports indicators, not proof.",
+    compression:
+      "Compression, resizing, and screenshotting destroy most of the signals these analyzers depend on.",
+    metadata:
+      "Metadata can be edited or removed, so its presence and absence are both weak evidence in isolation.",
+    uncalibrated:
+      "The scoring weights are documented heuristics and have not been calibrated against a labelled dataset.",
   },
 
   verdict: {

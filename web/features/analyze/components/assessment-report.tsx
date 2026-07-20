@@ -36,6 +36,37 @@ const ICONS = {
 } as const;
 
 /**
+ * Engine prose, in the reader's language.
+ *
+ * The engine sends both a stable `code` and an English sentence. We render the
+ * dictionary entry for the code and fall back to the engine's English only
+ * when the code is unknown — so adding an analyzer outcome degrades to English
+ * rather than to a blank space, and a translated build never mixes languages
+ * for outcomes it does know.
+ */
+type Localised = { summary: string; caveat: string };
+
+function useEngineCopy() {
+  const { t } = useLocale();
+
+  const outcome = (code: string | null, fallback: Localised): Localised => {
+    const entry = code
+      ? (t.outcomes as Record<string, Localised | undefined>)[code]
+      : undefined;
+    return entry ?? fallback;
+  };
+
+  const analyzerLabel = (id: string, fallback: string): string =>
+    (t.analyzers as Record<string, string | undefined>)[id] ?? fallback;
+
+  const limitation = (code: string | undefined, fallback: string): string =>
+    (code ? (t.limits as Record<string, string | undefined>)[code] : undefined) ??
+    fallback;
+
+  return { outcome, analyzerLabel, limitation };
+}
+
+/**
  * The assessment report.
  *
  * Two presentation rules exist to keep this honest:
@@ -51,8 +82,31 @@ const ICONS = {
  */
 export function AssessmentReport({ result }: { result: AnalysisResponse }) {
   const { t } = useLocale();
+  const { analyzerLabel, limitation } = useEngineCopy();
   const { assessment } = result;
   const presentation = VERDICT_PRESENTATION[assessment.verdict];
+
+  // The overall summary is assembled here rather than taken from the engine so
+  // it reads in one language: the shape comes from `summary_code`, the driving
+  // analyzer names from the dictionary, and the conflict note is appended the
+  // same way the engine appends it.
+  const summaryText = (() => {
+    const code = assessment.summary_code;
+    const table = t.summaries as Record<string, string | undefined>;
+    const template = code ? table[code] : undefined;
+    if (!template) return assessment.summary;
+
+    let text = template;
+    if (code === "leaning-synthetic" || code === "leaning-authentic") {
+      const names = assessment.summary_driver_ids.map((id) =>
+        analyzerLabel(id, id).toLocaleLowerCase(),
+      );
+      text = fill(template, {
+        drivers: names.length ? names.join("، ") : t.summaries.fallbackDrivers,
+      });
+    }
+    return assessment.conflicted ? text + t.summaries.conflictNote : text;
+  })();
   const VerdictIcon = ICONS[presentation.icon as keyof typeof ICONS];
 
   return (
@@ -134,7 +188,7 @@ export function AssessmentReport({ result }: { result: AnalysisResponse }) {
                   className="mt-0.5 size-4 shrink-0 text-ink-faint"
                   aria-hidden="true"
                 />
-                <p className="text-body-sm text-ink-muted">{assessment.summary}</p>
+                <p className="text-body-sm text-ink-muted">{summaryText}</p>
               </div>
             </div>
           </div>
@@ -156,13 +210,13 @@ export function AssessmentReport({ result }: { result: AnalysisResponse }) {
             {t.report.limitationsTitle}
           </h3>
           <ul className="mt-4 flex flex-col gap-2.5">
-            {assessment.limitations.map((limitation) => (
-              <li key={limitation} className="flex gap-2.5 text-body-sm text-ink-muted">
+            {assessment.limitations.map((text, index) => (
+              <li key={index} className="flex gap-2.5 text-body-sm text-ink-muted">
                 <span
                   aria-hidden="true"
                   className="mt-2 size-1 shrink-0 rounded-full bg-ink-faint"
                 />
-                {limitation}
+                {limitation(assessment.limitation_codes[index], text)}
               </li>
             ))}
           </ul>
@@ -188,16 +242,23 @@ function UncalibratedNotice() {
 
 function FindingCard({ finding }: { finding: Finding }) {
   const { t } = useLocale();
+  const { outcome, analyzerLabel } = useEngineCopy();
   const [showDetail, setShowDetail] = useState(false);
   const direction = DIRECTION_PRESENTATION[finding.direction];
+
+  const label = analyzerLabel(finding.id, finding.label);
+  const copy = outcome(finding.code, {
+    summary: finding.summary,
+    caveat: finding.caveat ?? "",
+  });
   const measurements = Object.entries(finding.measurements).filter(
     ([, value]) => value !== null && value !== undefined,
   );
 
   return (
-    <Card variant="surface" padding="lg" className="flex h-full flex-col gap-3">
+    <Card variant="surface" padding="lg" className="lift flex h-full flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-display text-h4 text-ink">{finding.label}</h3>
+        <h3 className="font-display text-h4 text-ink">{label}</h3>
         <span
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line px-2.5 py-1"
           style={{ color: `var(${direction.token})` }}
@@ -207,7 +268,7 @@ function FindingCard({ finding }: { finding: Finding }) {
         </span>
       </div>
 
-      <p className="text-body-sm text-ink-muted">{finding.summary}</p>
+      <p className="text-body-sm text-ink-muted">{copy.summary}</p>
 
       <div className="mt-auto flex flex-col gap-2 pt-2">
         <div className="flex items-baseline justify-between gap-3">
@@ -226,13 +287,13 @@ function FindingCard({ finding }: { finding: Finding }) {
                 ? "success"
                 : "neutral"
           }
-          aria-label={`${finding.label} — ${t.report.signalStrength}`}
+          aria-label={`${label} — ${t.report.signalStrength}`}
         />
       </div>
 
-      {finding.caveat && (
+      {copy.caveat && (
         <p className="rounded-lg bg-surface-inset p-3 text-caption text-ink-faint">
-          {finding.caveat}
+          {copy.caveat}
         </p>
       )}
 

@@ -97,6 +97,7 @@ class MetadataAnalyzer:
                 label=self.label,
                 direction=Direction.SYNTHETIC,
                 strength=0.95,
+                code="metadata.generator",
                 summary=(
                     "The file carries provenance data associated with AI generation "
                     f"({', '.join(generator_hits[:3])})."
@@ -114,6 +115,7 @@ class MetadataAnalyzer:
                 label=self.label,
                 direction=Direction.AUTHENTIC,
                 strength=0.45,
+                code="metadata.camera",
                 summary=(
                     f"Camera metadata is present ({make} {model}".strip()
                     + "), consistent with a photograph."
@@ -131,6 +133,7 @@ class MetadataAnalyzer:
                 label=self.label,
                 direction=Direction.NEUTRAL,
                 strength=0.3,
+                code="metadata.editor",
                 summary=(
                     f"The file was exported by editing software ({software}), with no "
                     "camera signature."
@@ -148,6 +151,7 @@ class MetadataAnalyzer:
                 label=self.label,
                 direction=Direction.NEUTRAL,
                 strength=0.15,
+                code="metadata.none",
                 summary="No embedded metadata was found.",
                 measurements=measurements,
                 caveat=(
@@ -161,6 +165,7 @@ class MetadataAnalyzer:
             label=self.label,
             direction=Direction.NEUTRAL,
             strength=0.2,
+            code="metadata.partial",
             summary=(
                 f"{len(exif_tags)} metadata tags present, but none identify a camera "
                 "or a generator."

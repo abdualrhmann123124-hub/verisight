@@ -60,6 +60,16 @@ export function StageProgress({
     handoff: { label: t.stages.handoff, detail: t.stages.handoffDetail },
   };
 
+  // Spoken after the stage name, so a screen-reader user hears the state in
+  // the same language as everything else.
+  const STATUS_TEXT: Record<StageStatus, string> = {
+    pending: t.stages.statusPending,
+    active: t.stages.statusActive,
+    done: t.stages.statusDone,
+    failed: t.stages.statusFailed,
+    blocked: t.stages.statusBlocked,
+  };
+
   const settled = stages.filter(
     (s) => s.status === "done" || s.status === "failed" || s.status === "blocked",
   ).length;
@@ -129,7 +139,7 @@ export function StageProgress({
                   )}
                 >
                   {STAGE_TEXT[stage.id].label}
-                  <span className="sr-only"> — {stage.status}</span>
+                  <span className="sr-only"> — {STATUS_TEXT[stage.status]}</span>
                 </span>
 
                 <AnimatePresence mode="wait" initial={false}>

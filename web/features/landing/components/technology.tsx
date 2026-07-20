@@ -65,7 +65,7 @@ export function Technology() {
         <Stagger className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {techniques.map(({ icon: Icon, title, body }) => (
             <StaggerItem key={title}>
-              <Card variant="surface" padding="lg" className="h-full">
+              <Card variant="surface" padding="lg" className="lift sheen h-full">
                 <Icon className="size-5 text-support" aria-hidden="true" />
                 <h3 className="mt-5 font-display text-h4 text-ink">{title}</h3>
                 <p className="mt-2 text-body-sm text-ink-muted">{body}</p>

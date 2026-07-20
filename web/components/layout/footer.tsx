@@ -60,20 +60,30 @@ export function Footer() {
                   {group.heading}
                 </h2>
                 <ul className="flex flex-col gap-2.5">
-                  {group.links.map((link) => (
-                    <li key={link.href}>
-                      <Link
-                        href={link.href}
-                        className={cn(
-                          "rounded-sm text-body-sm text-ink-muted",
-                          "transition-colors duration-150 hover:text-ink",
-                          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
-                        )}
-                      >
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
+                  {group.links.map((link) => {
+                    // An off-site link opens in a new tab so the reader does
+                    // not lose an analysis in progress. `noopener` is not
+                    // optional: without it the opened page gets a handle on
+                    // this one through `window.opener`.
+                    const external = /^https?:\/\//i.test(link.href);
+                    return (
+                      <li key={link.href}>
+                        <Link
+                          href={link.href}
+                          {...(external
+                            ? { target: "_blank", rel: "noopener noreferrer" }
+                            : {})}
+                          className={cn(
+                            "rounded-sm text-body-sm text-ink-muted",
+                            "transition-colors duration-150 hover:text-ink",
+                            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+                          )}
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}

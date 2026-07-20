@@ -106,6 +106,7 @@ class SpectralAnalyzer:
                 label=self.label,
                 direction=Direction.SYNTHETIC,
                 strength=clamp01((residual_std - 0.25) / 0.5) * 0.7,
+                code="spectral.periodic",
                 summary=(
                     "The frequency spectrum departs sharply from a natural falloff, "
                     "consistent with the periodic structure generative upsampling leaves."
@@ -123,6 +124,7 @@ class SpectralAnalyzer:
                 label=self.label,
                 direction=Direction.NEUTRAL,
                 strength=0.1,
+                code="spectral.flat",
                 summary=(
                     "The spectrum is too smooth to carry usable evidence, typically "
                     "the result of heavy compression or resizing."
@@ -136,6 +138,7 @@ class SpectralAnalyzer:
             label=self.label,
             direction=Direction.AUTHENTIC,
             strength=0.35,
+            code="spectral.natural",
             summary=(
                 "The spectrum falls off smoothly, as expected from optics and a "
                 "camera sensor."
@@ -204,6 +207,7 @@ class NoiseAnalyzer:
                 label=self.label,
                 direction=Direction.SYNTHETIC,
                 strength=0.55,
+                code="noise.denoised",
                 summary=(
                     "Almost no sensor noise is present, which is unusual for a "
                     "camera-captured image."
@@ -221,6 +225,7 @@ class NoiseAnalyzer:
                 label=self.label,
                 direction=Direction.SYNTHETIC,
                 strength=clamp01((0.25 - relative_spread) / 0.25 * 0.6),
+                code="noise.uniform",
                 summary=(
                     "Noise is unnaturally uniform across bright and dark regions, "
                     "where sensor noise would normally vary with brightness."
@@ -234,6 +239,7 @@ class NoiseAnalyzer:
             label=self.label,
             direction=Direction.AUTHENTIC,
             strength=0.5,
+            code="noise.varies",
             summary=(
                 "Noise varies with local brightness, consistent with a physical "
                 "camera sensor."

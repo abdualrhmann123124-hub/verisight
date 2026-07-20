@@ -24,6 +24,9 @@ export const findingSchema = z.object({
   direction: directionSchema,
   strength: z.number().min(0).max(1),
   summary: z.string(),
+  /** Stable outcome id (e.g. "noise.uniform") used to localise the copy. The
+   *  engine's English `summary`/`caveat` stay as the fallback. */
+  code: z.string().nullable().default(null),
   measurements: z.record(z.string(), z.unknown()).default({}),
   caveat: z.string().nullable().default(null),
 });
@@ -36,8 +39,12 @@ export const assessmentSchema = z.object({
    *  UI must not present the likelihood as a probability while it is False. */
   calibrated: z.boolean(),
   summary: z.string(),
+  summary_code: z.string().nullable().default(null),
+  summary_driver_ids: z.array(z.string()).default([]),
+  conflicted: z.boolean().default(false),
   findings: z.array(findingSchema),
   limitations: z.array(z.string()),
+  limitation_codes: z.array(z.string()).default([]),
 });
 
 export const analysisResponseSchema = z.object({

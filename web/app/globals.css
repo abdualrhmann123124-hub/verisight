@@ -317,6 +317,111 @@
     }
   }
 
+  /* Card lift on hover.
+     Transform and shadow only — never layout properties — so hovering a grid
+     of cards cannot reflow the page. `will-change` is deliberately omitted:
+     promoting every card to its own layer costs more than the effect. */
+  .lift {
+    transition:
+      transform 260ms var(--ease-out-expo),
+      box-shadow 260ms var(--ease-out-expo),
+      border-color 260ms var(--ease-out-expo);
+  }
+
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.55);
+    border-color: color-mix(in oklab, var(--accent) 30%, var(--line));
+  }
+
+  /* Sheen that sweeps across a surface on hover. Purely decorative, so it is
+     pointer-transparent and hidden from assistive tech. */
+  .sheen {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      color-mix(in oklab, var(--accent) 12%, transparent) 50%,
+      transparent 60%
+    );
+    transform: translateX(-120%);
+    transition: transform 700ms var(--ease-out-expo);
+  }
+
+  .sheen:hover::after {
+    transform: translateX(120%);
+  }
+
+  /* Shimmering placeholder for content that is still loading. The gradient
+     travels rather than pulsing, which reads as progress instead of as a
+     broken element blinking. */
+  .shimmer {
+    background-image: linear-gradient(
+      90deg,
+      var(--surface-inset) 0%,
+      var(--surface-overlay) 50%,
+      var(--surface-inset) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-sweep 1.6s linear infinite;
+  }
+
+  @keyframes shimmer-sweep {
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Soft pulsing halo, for the element the user is waiting on. */
+  .pulse-ring::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    border: 1px solid color-mix(in oklab, var(--accent) 40%, transparent);
+    animation: pulse-ring 1.8s var(--ease-out-expo) infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      opacity: 0.8;
+      transform: scale(0.98);
+    }
+    70%,
+    100% {
+      opacity: 0;
+      transform: scale(1.06);
+    }
+  }
+
+  /* Everything above is decoration. Anyone who has asked their system to
+     reduce motion gets the layout without the movement. */
+  @media (prefers-reduced-motion: reduce) {
+    .lift,
+    .sheen::after {
+      transition: none;
+    }
+
+    .lift:hover {
+      transform: none;
+    }
+
+    .shimmer,
+    .pulse-ring::before {
+      animation: none;
+    }
+  }
+
   /* Hairline gradient border for hero surfaces and the primary CTA.
      Two mask layers composited with `exclude` paint only the 1px edge. */
   .edge-highlight {

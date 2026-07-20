@@ -47,7 +47,7 @@ export function HowItWorks() {
         <Stagger className="mt-16 grid gap-6 md:grid-cols-3">
           {steps.map(({ icon: Icon, step, title, body }) => (
             <StaggerItem key={step}>
-              <Card variant="surface" padding="lg" className="h-full">
+              <Card variant="surface" padding="lg" className="lift sheen h-full">
                 <div className="flex items-center justify-between">
                   <span className="grid size-11 place-items-center rounded-xl bg-accent-subtle text-accent">
                     <Icon className="size-5" aria-hidden="true" />

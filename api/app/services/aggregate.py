@@ -54,6 +54,15 @@ LIMITATIONS = [
     "calibrated against a labelled dataset.",
 ]
 
+#: Stable ids for the limitations above, same order. The UI renders these in
+#: the reader's language and falls back to the English text for unknown ids.
+LIMITATION_CODES = [
+    "open-problem",
+    "compression",
+    "metadata",
+    "uncalibrated",
+]
+
 
 def _verdict_for(score: float, evidence: float) -> Verdict:
     """Map a score to a band, widening toward inconclusive when evidence is thin.
@@ -81,11 +90,18 @@ def _verdict_for(score: float, evidence: float) -> Verdict:
 
 def _summarise(
     verdict: Verdict, findings: list[Finding], conflicted: bool, evidence: float
-) -> str:
+) -> tuple[str, str, list[str]]:
+    """Returns the English summary, a stable code, and the driving analyzer ids.
+
+    The code and ids are what the UI localises with; the English sentence
+    remains the fallback for a code it does not recognise.
+    """
     if not findings:
         return (
             "No analyzer produced a usable measurement for this file, so no "
-            "assessment can be offered."
+            "assessment can be offered.",
+            "no-findings",
+            [],
         )
 
     if verdict is Verdict.INCONCLUSIVE:
@@ -93,12 +109,16 @@ def _summarise(
             return (
                 "Too little forensic evidence survived in this file to support an "
                 "assessment. This usually means it has been compressed, resized, or "
-                "screenshotted — all of which erase the traces these analyses rely on."
+                "screenshotted — all of which erase the traces these analyses rely on.",
+                "thin-evidence",
+                [],
             )
         return (
             "The analyses disagree, with indicators pointing in both directions and "
             "none strong enough to settle it. Treat this as genuinely undetermined "
-            "rather than as a weak result in either direction."
+            "rather than as a weak result in either direction.",
+            "disagreement",
+            [],
         )
 
     leaning = "generated" if "synthetic" in verdict.value else "camera-captured"
@@ -116,7 +136,9 @@ def _summarise(
             " Note that at least one analysis pointed the other way; the per-signal "
             "findings below show where they disagree."
         )
-    return text
+
+    code = "leaning-synthetic" if "synthetic" in verdict.value else "leaning-authentic"
+    return text, code, [f.id for f in lead[:2]]
 
 
 def aggregate(findings: list[Finding]) -> Assessment:
@@ -129,14 +151,19 @@ def aggregate(findings: list[Finding]) -> Assessment:
     that happens to land on one side.
     """
     if not findings:
+        text, code, drivers = _summarise(Verdict.INCONCLUSIVE, [], False, 0.0)
         return Assessment(
             verdict=Verdict.INCONCLUSIVE,
             synthetic_likelihood=50.0,
             evidence_strength=0.0,
             calibrated=False,
-            summary=_summarise(Verdict.INCONCLUSIVE, [], False, 0.0),
+            summary=text,
+            summary_code=code,
+            summary_driver_ids=drivers,
+            conflicted=False,
             findings=[],
             limitations=LIMITATIONS,
+            limitation_codes=LIMITATION_CODES,
         )
 
     total_weight = 0.0
@@ -163,13 +190,18 @@ def aggregate(findings: list[Finding]) -> Assessment:
 
     verdict = _verdict_for(score, total_weight)
     evidence_pct = min(100.0, total_weight / FULL_EVIDENCE * 100.0)
+    text, code, drivers = _summarise(verdict, findings, conflicted, total_weight)
 
     return Assessment(
         verdict=verdict,
         synthetic_likelihood=round(score, 1),
         evidence_strength=round(evidence_pct, 1),
         calibrated=False,
-        summary=_summarise(verdict, findings, conflicted, total_weight),
+        summary=text,
+        summary_code=code,
+        summary_driver_ids=drivers,
+        conflicted=conflicted,
         findings=findings,
         limitations=LIMITATIONS,
+        limitation_codes=LIMITATION_CODES,
     )

@@ -37,6 +37,10 @@ class Finding(BaseModel):
     strength: float = Field(ge=0.0, le=1.0)
     #: One sentence a non-specialist can act on.
     summary: str
+    #: Stable identifier for this outcome (e.g. "metadata.generator"), so the
+    #: UI can localise the summary/caveat instead of showing engine English.
+    #: The English text above remains the fallback for unknown codes.
+    code: str | None = None
     #: The raw numbers behind the call, so the result can be checked.
     measurements: dict[str, Any] = Field(default_factory=dict)
     #: What this analyzer cannot tell you. Shown in the UI.
@@ -69,8 +73,17 @@ class Assessment(BaseModel):
     evidence_strength: float = Field(ge=0.0, le=100.0)
     calibrated: bool = False
     summary: str
+    #: Stable identifier for the summary shape ("no-findings", "thin-evidence",
+    #: "disagreement", "leaning"), for UI localisation. English is the fallback.
+    summary_code: str | None = None
+    #: Analyzer ids driving a "leaning" summary, strongest first.
+    summary_driver_ids: list[str] = Field(default_factory=list)
+    #: Whether at least one analysis pointed the opposite way.
+    conflicted: bool = False
     findings: list[Finding]
     limitations: list[str]
+    #: Stable identifiers for the limitations list, same order.
+    limitation_codes: list[str] = Field(default_factory=list)
 
 
 class AnalysisResponse(BaseModel):

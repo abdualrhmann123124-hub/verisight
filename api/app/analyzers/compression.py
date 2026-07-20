@@ -79,6 +79,7 @@ class QuantizationAnalyzer:
                 label=self.label,
                 direction=Direction.NEUTRAL,
                 strength=clamp01(shape_divergence),
+                code="quantization.nonstandard",
                 summary=(
                     "The quantization table does not match the standard encoder "
                     "baseline, indicating the file was re-encoded by software."
@@ -95,6 +96,7 @@ class QuantizationAnalyzer:
             label=self.label,
             direction=Direction.AUTHENTIC,
             strength=0.35,
+            code="quantization.standard",
             summary=(
                 "The quantization table follows the standard encoder baseline, "
                 "consistent with a camera or a conventional export."
@@ -167,6 +169,7 @@ class ErrorLevelAnalyzer:
                 label=self.label,
                 direction=Direction.NEUTRAL,
                 strength=clamp01((cv - 1.2) / 1.5),
+                code="ela.uneven",
                 summary=(
                     "Compression error is unevenly distributed across the frame, "
                     "which can indicate regions from different sources."
@@ -183,6 +186,7 @@ class ErrorLevelAnalyzer:
             label=self.label,
             direction=Direction.NEUTRAL,
             strength=0.2,
+            code="ela.even",
             summary="Compression error is spread evenly, with no obvious spliced regions.",
             measurements=measurements,
             caveat=(

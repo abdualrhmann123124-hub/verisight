@@ -21,7 +21,7 @@ import {
 
 import { Container } from "@/components/layout/container";
 import { Reveal } from "@/components/motion/reveal";
-import { useLocale } from "@/components/providers/locale-provider";
+import { fill, useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -157,7 +157,9 @@ export function AnalyzeWorkspace() {
             "handoff",
             "done",
             Math.round(performance.now() - startedAt),
-            `${analysis.assessment.findings.length} analyzers reported`,
+            fill(t.stages.analyzersReported, {
+              count: analysis.assessment.findings.length,
+            }),
           );
         } catch (engineError) {
           const blockedNote =
@@ -399,7 +401,14 @@ export function AnalyzeWorkspace() {
             </div>
 
             <div className="flex flex-col gap-6">
-              <Card variant="surface" padding="lg">
+              <Card
+                variant="surface"
+                padding="lg"
+                // The halo marks the panel the user is waiting on, and stops
+                // the moment the run settles so a finished report is not left
+                // pulsing for attention it no longer needs.
+                className={cn("relative", phase === "running" && "pulse-ring")}
+              >
                 <StageProgress stages={stages} />
               </Card>
               {facts && <MediaFactsPanel facts={facts} />}
