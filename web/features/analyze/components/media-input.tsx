@@ -30,15 +30,35 @@ import { Button } from "@/components/ui/button";
 import { DURATION, EASE_OUT_EXPO, SPRING_UI } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import {
+  analysableUrl,
   checkMediaFile,
   checkMediaUrl,
   FILE_ACCEPT,
   formatBytes,
   type UrlCheck,
+  type ValidationMessages,
 } from "@/features/analyze/lib/media-source";
 import { setPendingFile } from "@/features/analyze/lib/pending-file";
 
-const EXAMPLE_URL = "https://images.example.com/press-photo-2024.jpg";
+/** Maps a fetch-media failure code onto the reader's language. */
+function fetchFailureMessage(reason: unknown, v: ValidationMessages): string {
+  switch (reason) {
+    case "invalid-url":
+      return v.urlMalformed;
+    case "blocked-host":
+      return v.fetchBlocked;
+    case "not-an-image":
+      return v.fetchNotImage;
+    case "too-large":
+      return v.fetchTooLarge;
+    default:
+      return v.fetchUnreachable;
+  }
+}
+
+// A real, stable public image (Wikimedia Commons), so "try an example"
+// exercises the actual fetch-and-analyze path instead of dead-ending.
+const EXAMPLE_URL = "https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg";
 
 interface SelectedFile {
   name: string;
@@ -167,21 +187,55 @@ export function MediaInput() {
     setFileError(null);
   }, []);
 
-  const _hasRecognisedUrl = check.status === "platform" || check.status === "direct";
-  // Only a picked file can be analyzed. Link analysis is not implemented, and
-  // enabling the button for a URL would promise something that cannot happen.
-  const canAnalyze = Boolean(file);
+  // A picked file, a direct image link, or a YouTube cover image can all be
+  // analyzed. The button stays disabled for everything else — enabling it for
+  // a post page would promise something the fetch cannot deliver.
+  const remoteUrl = analysableUrl(check);
+  const canAnalyze = Boolean(file) || Boolean(remoteUrl);
 
-  const handleAnalyze = useCallback(() => {
-    if (!file) return;
-    setPending(true);
+  const handleAnalyze = useCallback(async () => {
     setNotice(null);
+
     // Hand the file to the workspace, which owns the preflight pipeline and
     // the engine call. Duplicating that here would mean two implementations
     // of the same flow drifting apart.
-    setPendingFile(file.source);
-    router.push("/analyze");
-  }, [file, router]);
+    if (file) {
+      setPending(true);
+      setPendingFile(file.source);
+      router.push("/analyze");
+      return;
+    }
+
+    // A link is analysed by fetching the bytes server-side and continuing as
+    // if they had been uploaded — one pipeline, whatever the input.
+    if (!remoteUrl) return;
+    setPending(true);
+    try {
+      const response = await fetch("/api/fetch-media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: remoteUrl }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          reason?: string;
+        } | null;
+        setNotice(fetchFailureMessage(payload?.reason, t.validation));
+        setPending(false);
+        return;
+      }
+
+      const blob = await response.blob();
+      const encoded = response.headers.get("X-Media-Filename");
+      const name = encoded ? decodeURIComponent(encoded) : "remote-image.jpg";
+      setPendingFile(new File([blob], name, { type: blob.type }));
+      router.push("/analyze");
+    } catch {
+      setNotice(t.validation.fetchUnreachable);
+      setPending(false);
+    }
+  }, [file, remoteUrl, router, t]);
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -302,7 +356,7 @@ export function MediaInput() {
               className="h-14 flex-1 sm:flex-none"
               disabled={!canAnalyze}
               loading={pending}
-              loadingLabel={t.input.checking}
+              loadingLabel={file ? t.input.checking : t.input.fetchingRemote}
               leadingIcon={<Sparkles />}
               onClick={handleAnalyze}
             >
@@ -442,25 +496,34 @@ function StatusLine({
   }
 
   switch (check.status) {
-    // A recognised link is still not an analysable one. Saying only
-    // "YouTube link detected" reads as success and sets up a dead end, so the
-    // limitation is stated in the same breath as the recognition.
+    // A direct image link is genuinely analysable — the server fetches the
+    // bytes and the normal pipeline takes over.
+    case "image":
+      return (
+        <Message tone="success" icon={<Link2 />}>
+          {fill(t.input.linkImageReady, { host: check.hostname })}
+        </Message>
+      );
+    // YouTube: the cover image is fetchable, the video is not. Saying which
+    // one will be inspected is the difference between a feature and a trick.
+    case "thumbnail":
+      return (
+        <Message tone="success" icon={<Link2 />}>
+          {fill(t.input.linkThumbnail, { platform: check.label })}
+        </Message>
+      );
+    case "videoFile":
+      return (
+        <Message tone="warning" icon={<Link2 />}>
+          {fill(t.input.linkVideoFile, { host: check.hostname })}
+        </Message>
+      );
+    // A recognised post page is still not a fetchable one; the limitation is
+    // stated in the same breath as the recognition.
     case "platform":
       return (
         <Message tone="warning" icon={<Link2 />}>
           {fill(t.input.linkRecognised, { platform: check.platform.label })}
-          <span className="text-ink-faint">
-            {check.platform.kind === "video"
-              ? t.input.linkVideoNote
-              : t.input.linkImageNote}
-          </span>
-        </Message>
-      );
-    case "direct":
-      return (
-        <Message tone="warning" icon={<Link2 />}>
-          {fill(t.input.directLink, { host: check.hostname })}
-          <span className="text-ink-faint">{t.input.directLinkNote}</span>
         </Message>
       );
     case "insecure":

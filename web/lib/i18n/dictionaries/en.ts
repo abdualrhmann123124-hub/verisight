@@ -44,12 +44,13 @@ export const en = {
     image: "Image",
     video: "Video",
     linkRecognised:
-      "{platform} link recognised — but analyzing links is not supported yet.",
-    linkVideoNote:
-      " Video analysis is also still in development. Upload an image file instead.",
-    linkImageNote: " Save the image and upload the file instead.",
-    directLink: "Direct media link on {host} — but analyzing links is not supported yet.",
-    directLinkNote: " Download the file and upload it instead.",
+      "{platform} link recognised — but post pages can't be fetched. Paste a direct image link, or save the image and upload it.",
+    linkImageReady: "Image link on {host} — press Analyze to fetch and inspect it.",
+    linkThumbnail:
+      "{platform} video — the video itself can't be analyzed yet, but its cover image can. Analyze will inspect the cover image.",
+    linkVideoFile:
+      "Video link on {host} — video analysis is not supported yet. Paste an image link or upload an image instead.",
+    fetchingRemote: "Fetching image…",
   },
 
   workspace: {
@@ -166,7 +167,7 @@ export const en = {
     step3Body:
       "You get a confidence estimate with the findings behind it — including which signals disagreed and how reliable the assessment is.",
     footnote:
-      "Processing time depends on image size. Link and video analysis are not yet available.",
+      "Processing time depends on image size. Direct image links are fetched and analyzed; video analysis is not yet available.",
   },
 
   technology: {
@@ -253,7 +254,7 @@ export const en = {
     q4: "What happens to the media I upload?",
     a4: "Preflight — hashing, decoding, metadata — runs entirely in your browser. The file is sent to the analysis engine only for the forensic stage, where it is processed and discarded. Nothing is published, shared, sold, or used as training data.",
     q5: "Can I analyze a link or a video?",
-    a5: "Not yet. Links are recognised but not fetched, and the engine analyzes still images only. Video would need frame extraction and temporal aggregation, which is not built. Download the media and upload the image file instead.",
+    a5: "Image links, yes: paste a direct link to an image file and it is fetched and analyzed exactly like an upload. For a YouTube link the cover image is analyzed — the report says so plainly. Post pages on other platforms can't be fetched, and video analysis is not built yet: the engine reads still images only.",
     q6: "Does editing a photo make it look AI-generated?",
     a6: "It can affect several signals. Cropping, filters, and re-exporting all leave traces that overlap with the traces generation leaves. This is why no single indicator decides the outcome, and why the report shows which signals fired rather than only a final number.",
   },
@@ -301,6 +302,11 @@ export const en = {
       "It may have been moved or deleted since you selected it. Try selecting it again.",
     generic: "Something went wrong while reading this file.",
     genericRecovery: "Try again, or use a different file.",
+    fetchBlocked: "That address can't be fetched from here.",
+    fetchUnreachable:
+      "The image could not be fetched — the server may be blocking automated access. Save the image and upload it instead.",
+    fetchNotImage: "That link didn't return an image file.",
+    fetchTooLarge: "That image is larger than the 25 MB limit.",
   },
 } as const;
 

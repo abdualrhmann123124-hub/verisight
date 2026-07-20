@@ -39,8 +39,11 @@ export function Reveal({
 
   return (
     <MotionComponent
-      initial={{ opacity: 0, y: distance }}
-      whileInView={{ opacity: 1, y: 0 }}
+      // The blur is what sells the entrance: opacity+translate alone reads as
+      // "web template", while content resolving from soft focus reads as
+      // depth. Kept subtle (6px) so text is never illegible mid-animation.
+      initial={{ opacity: 0, y: distance, filter: "blur(6px)" }}
+      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
       viewport={{ once: true, margin: "0px 0px -80px 0px" }}
       transition={{ duration: DURATION.slower, ease: EASE_OUT_EXPO, delay }}
       className={cn(className)}
@@ -85,10 +88,12 @@ export function StaggerItem({
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, y: 16 },
+        hidden: { opacity: 0, y: 16, scale: 0.97, filter: "blur(6px)" },
         visible: {
           opacity: 1,
           y: 0,
+          scale: 1,
+          filter: "blur(0px)",
           transition: { duration: DURATION.slow, ease: EASE_OUT_EXPO },
         },
       }}

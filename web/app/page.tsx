@@ -1,5 +1,6 @@
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
+import { PageTransition } from "@/components/motion/page-transition";
 import { ExampleAnalysis } from "@/features/landing/components/example-analysis";
 import { Faq } from "@/features/landing/components/faq";
 import { Hero } from "@/features/landing/components/hero";
@@ -12,12 +13,14 @@ export default function HomePage() {
     <>
       <Navbar />
       <main id="main">
-        <Hero />
-        <HowItWorks />
-        <Technology />
-        <ExampleAnalysis />
-        <WhyVeriSight />
-        <Faq />
+        <PageTransition>
+          <Hero />
+          <HowItWorks />
+          <Technology />
+          <ExampleAnalysis />
+          <WhyVeriSight />
+          <Faq />
+        </PageTransition>
       </main>
       <Footer />
     </>

@@ -35,31 +35,33 @@ export const MAX_IMAGE_BYTES = 25 * 1024 * 1024; // 25 MB
 export const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB
 
 /**
- * Whether the platform can fetch and analyze media from a URL.
+ * What a link can and cannot reach.
  *
- * It cannot. There is no URL-fetching code anywhere in the project, and the
- * engine accepts image bytes only. This flag exists so the UI states that
- * plainly in one place rather than implying otherwise — recognising a link
- * and analyzing it are very different things, and a status line reading
- * "YouTube link detected" invites the user to expect the second.
+ * A **direct link to an image file** is fetched server-side (see
+ * `remote-fetch`) and analysed exactly like an upload — same preflight, same
+ * engine, same report.
  *
- * Flipping this to true requires: server-side fetching with SSRF protection,
- * per-platform extraction (most block automated access to post pages), and —
- * for every video platform in the list below — a video pipeline the engine
- * does not have.
+ * A **post page** on a platform is not. Reading one means scraping HTML that
+ * changes without notice, and most platforms block automated access outright;
+ * a feature that works until the next deploy is worse than an honest refusal.
+ * YouTube is the one exception, and only partly: its cover image lives at a
+ * stable public URL, so that image can be analysed — the video cannot, and the
+ * UI says which of the two it is about to look at.
+ *
+ * **Video** is refused everywhere. The engine measures still frames; giving it
+ * a clip would need frame extraction and temporal aggregation that do not
+ * exist yet.
  */
-export const LINK_ANALYSIS_AVAILABLE = false;
 
 /**
  * Platforms whose links the input can *recognise*.
  *
  * Recognition is genuinely useful: it lets the field tell a user their link
- * was understood and what would be needed to analyze it. It is not a claim
- * that analysis works — see LINK_ANALYSIS_AVAILABLE.
+ * was understood and exactly what can be done with it — fetched (YouTube's
+ * cover image), or refused with a reason (post pages, video).
  *
  * `kind` records what a link from each platform actually yields, because the
- * engine handles images only. Even once fetching lands, the video platforms
- * here need frame extraction and temporal aggregation first.
+ * engine handles images only.
  */
 export const SUPPORTED_PLATFORMS = [
   { id: "x", label: "X", hosts: ["x.com", "twitter.com", "t.co"], kind: "mixed" },
@@ -97,16 +99,53 @@ export const SUPPORTED_PLATFORMS = [
 
 export type PlatformId = (typeof SUPPORTED_PLATFORMS)[number]["id"];
 
+export type Platform = (typeof SUPPORTED_PLATFORMS)[number];
+
 export type UrlCheck =
   | { status: "empty" }
   | { status: "invalid"; message: string }
   | { status: "insecure"; message: string }
-  | { status: "platform"; platform: (typeof SUPPORTED_PLATFORMS)[number] }
-  | { status: "direct"; hostname: string }
+  /** Direct link to a still image — fetched and analysed like an upload. */
+  | { status: "image"; hostname: string; fetchUrl: string }
+  /** YouTube — only the cover image is reachable, never the video itself. */
+  | { status: "thumbnail"; label: string; fetchUrl: string }
+  /** Direct link to a video file — the engine reads stills only. */
+  | { status: "videoFile"; hostname: string }
+  /** A recognised post page: understood, but not fetchable. */
+  | { status: "platform"; platform: Platform }
   | { status: "unsupported"; hostname: string; message: string };
 
-/** Matches a URL ending in a media extension, ignoring any query string. */
-const DIRECT_MEDIA_PATTERN = /\.(png|jpe?g|webp|gif|mp4|mov|webm|m4v)$/i;
+/** The URL to fetch when the check produced something analysable. */
+export function analysableUrl(check: UrlCheck): string | null {
+  return check.status === "image" || check.status === "thumbnail" ? check.fetchUrl : null;
+}
+
+/** Direct links, matched on the path so a query string does not defeat them. */
+const DIRECT_IMAGE_PATTERN = /\.(png|jpe?g|webp)$/i;
+const DIRECT_VIDEO_PATTERN = /\.(gif|mp4|mov|webm|m4v)$/i;
+
+/**
+ * YouTube's cover image, which — unlike a post page — sits at a stable public
+ * URL. `hqdefault` is used rather than `maxresdefault` because it exists for
+ * every video, and a link that sometimes 404s is not worth the extra pixels.
+ */
+function youtubeCoverImage(url: URL): string | null {
+  const host = url.hostname.replace(/^www\./, "");
+  let id: string | null = null;
+
+  if (host === "youtu.be") {
+    id = (url.pathname.split("/").filter(Boolean)[0] ?? null) as string | null;
+  } else if (host === "youtube.com" || host.endsWith(".youtube.com")) {
+    id =
+      url.pathname === "/watch"
+        ? url.searchParams.get("v")
+        : (url.pathname.match(/^\/(?:shorts|embed|live)\/([^/]+)/)?.[1] ?? null);
+  }
+
+  return id && /^[\w-]{6,20}$/.test(id)
+    ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
+    : null;
+}
 
 /**
  * A plausible public hostname: dot-separated labels of alphanumerics and
@@ -158,10 +197,19 @@ export function checkMediaUrl(raw: string, msg: ValidationMessages): UrlCheck {
   const platform = SUPPORTED_PLATFORMS.find((p) =>
     p.hosts.some((h) => hostname === h || hostname.endsWith(`.${h}`)),
   );
-  if (platform) return { status: "platform", platform };
+  if (platform) {
+    // YouTube's cover image is publicly addressable, so that much is real.
+    const cover = youtubeCoverImage(url);
+    if (cover) return { status: "thumbnail", label: platform.label, fetchUrl: cover };
+    return { status: "platform", platform };
+  }
 
-  if (DIRECT_MEDIA_PATTERN.test(url.pathname)) {
-    return { status: "direct", hostname };
+  if (DIRECT_IMAGE_PATTERN.test(url.pathname)) {
+    return { status: "image", hostname, fetchUrl: url.toString() };
+  }
+
+  if (DIRECT_VIDEO_PATTERN.test(url.pathname)) {
+    return { status: "videoFile", hostname };
   }
 
   return {
