@@ -32,6 +32,14 @@ import { AssessmentReport } from "@/features/analyze/components/assessment-repor
 import { StageProgress } from "@/features/analyze/components/stage-progress";
 import { FILE_ACCEPT } from "@/features/analyze/lib/media-source";
 import { takePendingFile } from "@/features/analyze/lib/pending-file";
+import { FrameExtractionError } from "@/features/analyze/lib/video-frames";
+import { VideoFramesPanel } from "@/features/analyze/components/video-frames-panel";
+import {
+  analyzeVideo,
+  releaseVideoAssessment,
+  type FrameResult,
+  type VideoAssessment,
+} from "@/features/analyze/lib/video-analysis";
 import {
   EngineRejectedError,
   EngineUnavailableError,
@@ -75,6 +83,8 @@ export function AnalyzeWorkspace() {
   const [stages, setStages] = useState<readonly Stage[]>(INITIAL_STAGES);
   const [facts, setFacts] = useState<MediaFacts | null>(null);
   const [assessment, setAssessment] = useState<AnalysisResponse | null>(null);
+  const [videoAssessment, setVideoAssessment] = useState<VideoAssessment | null>(null);
+  const [selectedFrame, setSelectedFrame] = useState<FrameResult | null>(null);
   const [engineNote, setEngineNote] = useState<string | null>(null);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
@@ -117,6 +127,12 @@ export function AnalyzeWorkspace() {
     setStages(INITIAL_STAGES);
     setFacts(null);
     setAssessment(null);
+    // Each frame holds an object URL; dropping the state without revoking
+    // them keeps every sampled frame alive for the document's lifetime.
+    setVideoAssessment((previous) => {
+      releaseVideoAssessment(previous);
+      return null;
+    });
     setEngineNote(null);
     setFailure(null);
   }, []);
@@ -127,6 +143,10 @@ export function AnalyzeWorkspace() {
       setStages(INITIAL_STAGES);
       setFacts(null);
       setAssessment(null);
+      setVideoAssessment((previous) => {
+        releaseVideoAssessment(previous);
+        return null;
+      });
       setEngineNote(null);
       setFailure(null);
       setObjectUrl((prev) => {
@@ -151,23 +171,53 @@ export function AnalyzeWorkspace() {
         patchStage("handoff", "active");
         const startedAt = performance.now();
         try {
-          const analysis = await requestAnalysis(file);
-          setAssessment(analysis);
-          patchStage(
-            "handoff",
-            "done",
-            Math.round(performance.now() - startedAt),
-            fill(t.stages.analyzersReported, {
-              count: analysis.assessment.findings.length,
-            }),
-          );
+          if (result.kind === "video") {
+            // The engine reads stills, so a clip is sampled into frames here
+            // and each frame goes through the same endpoint an upload would.
+            // Sending the container itself is what produced "Supported formats
+            // are PNG, JPEG, and WEBP" for every video anyone tried.
+            const video = await analyzeVideo(file, (progress) =>
+              patchStage(
+                "handoff",
+                "active",
+                undefined,
+                `${
+                  progress.stage === "extracting" ? t.video.extracting : t.video.analyzing
+                } · ${fill(t.video.progress, {
+                  done: progress.done,
+                  total: progress.total,
+                })}`,
+              ),
+            );
+            setVideoAssessment(video);
+            setAssessment(video.representative.result);
+            patchStage(
+              "handoff",
+              "done",
+              Math.round(performance.now() - startedAt),
+              fill(t.video.framesAnalyzed, { count: video.frames.length }),
+            );
+          } else {
+            const analysis = await requestAnalysis(file);
+            setAssessment(analysis);
+            patchStage(
+              "handoff",
+              "done",
+              Math.round(performance.now() - startedAt),
+              fill(t.stages.analyzersReported, {
+                count: analysis.assessment.findings.length,
+              }),
+            );
+          }
         } catch (engineError) {
           const blockedNote =
             engineError instanceof EngineUnavailableError
               ? "Engine offline — run `npm run api` to enable full analysis."
-              : engineError instanceof EngineRejectedError
-                ? engineError.message
-                : "The engine could not analyze this file.";
+              : engineError instanceof FrameExtractionError
+                ? t.video.noFrames
+                : engineError instanceof EngineRejectedError
+                  ? engineError.message
+                  : "The engine could not analyze this file.";
           patchStage("handoff", "blocked", undefined, blockedNote);
           setEngineNote(blockedNote);
         }
@@ -363,6 +413,17 @@ export function AnalyzeWorkspace() {
                     </div>
                   </div>
                 </Card>
+              )}
+
+              {phase === "complete" && videoAssessment && (
+                <VideoFramesPanel
+                  assessment={videoAssessment}
+                  selected={selectedFrame ?? videoAssessment.representative}
+                  onSelect={(frame) => {
+                    setSelectedFrame(frame);
+                    setAssessment(frame.result);
+                  }}
+                />
               )}
 
               {phase === "complete" && assessment && (

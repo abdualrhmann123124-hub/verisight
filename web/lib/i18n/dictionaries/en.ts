@@ -47,9 +47,9 @@ export const en = {
       "{platform} link recognised — but post pages can't be fetched. Paste a direct image link, or save the image and upload it.",
     linkImageReady: "Image link on {host} — press Analyze to fetch and inspect it.",
     linkThumbnail:
-      "{platform} video — the video itself can't be analyzed yet, but its cover image can. Analyze will inspect the cover image.",
+      "{platform} video — links can only reach the cover image, so Analyze will inspect that. To analyze the video itself, download the clip and upload it: every frame is sampled and scored.",
     linkVideoFile:
-      "Video link on {host} — video analysis is not supported yet. Paste an image link or upload an image instead.",
+      "Video link on {host} — the file can't be fetched from a link. Download it and upload it instead, and each frame will be analyzed.",
     fetchingRemote: "Fetching image…",
   },
 
@@ -264,6 +264,25 @@ export const en = {
       "The scoring weights are documented heuristics and have not been calibrated against a labelled dataset.",
   },
 
+  video: {
+    title: "Frame-by-frame analysis",
+    extracting: "Extracting frames",
+    analyzing: "Analyzing frames",
+    progress: "{done} of {total}",
+    framesAnalyzed: "{count} frames analyzed",
+    meanScore: "Average score",
+    peakScore: "Highest frame",
+    atTime: "at {time}",
+    leaningCount: "{count} of {total} frames leaned synthetic",
+    showingFrame: "Showing the frame with the most surviving evidence",
+    selectFrame: "Select frame at {time}",
+    // The single most important caveat on this whole screen.
+    compressionNote:
+      "Each frame is analyzed independently as a still image. Video compression erases much of the evidence these analyzers read, so frame scores are weaker than they would be for the original photo — an inconclusive result here is common and expected.",
+    noFrames: "No frame could be decoded from this file.",
+    frameLabel: "Frame {index}",
+  },
+
   verdict: {
     authentic: "Likely Authentic",
     "leaning-authentic": "Leaning Authentic",
@@ -293,7 +312,7 @@ export const en = {
     step3Body:
       "You get a confidence estimate with the findings behind it — including which signals disagreed and how reliable the assessment is.",
     footnote:
-      "Processing time depends on image size. Direct image links are fetched and analyzed; video analysis is not yet available.",
+      "Processing time depends on size. Uploaded video is sampled frame by frame; direct image links are fetched and analyzed.",
   },
 
   technology: {
@@ -380,7 +399,7 @@ export const en = {
     q4: "What happens to the media I upload?",
     a4: "Preflight — hashing, decoding, metadata — runs entirely in your browser. The file is sent to the analysis engine only for the forensic stage, where it is processed and discarded. Nothing is published, shared, sold, or used as training data.",
     q5: "Can I analyze a link or a video?",
-    a5: "Image links, yes: paste a direct link to an image file and it is fetched and analyzed exactly like an upload. For a YouTube link the cover image is analyzed — the report says so plainly. Post pages on other platforms can't be fetched, and video analysis is not built yet: the engine reads still images only.",
+    a5: "Both, with one restriction. Upload a video and it is sampled into frames, each scored separately, with the per-frame results shown so you can see which moment looked worst. Paste a direct image link and it is fetched and analyzed like an upload. What links cannot do is reach a video: a YouTube link only gets you the cover image, and other post pages can't be fetched at all — download the clip and upload it for the full frame analysis.",
     q6: "Does editing a photo make it look AI-generated?",
     a6: "It can affect several signals. Cropping, filters, and re-exporting all leave traces that overlap with the traces generation leaves. This is why no single indicator decides the outcome, and why the report shows which signals fired rather than only a final number.",
   },
