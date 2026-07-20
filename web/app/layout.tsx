@@ -1,9 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Sans, Inter, JetBrains_Mono } from "next/font/google";
+import {
+  IBM_Plex_Sans_Arabic,
+  Instrument_Sans,
+  Inter,
+  JetBrains_Mono,
+} from "next/font/google";
+import { cookies } from "next/headers";
 
+import { SkipLink } from "@/components/layout/skip-link";
+import { LocaleProvider } from "@/components/providers/locale-provider";
 import { MotionProvider } from "@/components/providers/motion-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, LOCALE_META } from "@/lib/i18n/config";
 import { SITE } from "@/lib/site";
 
 import "./globals.css";
@@ -26,6 +35,18 @@ const inter = Inter({
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
+  display: "swap",
+});
+
+/* Arabic needs its own face — Inter and Instrument Sans carry no Arabic
+   glyphs, so without this the browser falls back to a system font and the
+   careful type scale collapses into whatever Windows happens to pick.
+   IBM Plex Sans Arabic is chosen for its neutral, technical tone, which is
+   the closest match to Inter's voice on the Latin side. */
+const plexArabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-arabic",
   display: "swap",
 });
 
@@ -69,37 +90,44 @@ export const viewport: Viewport = {
   // trade away on someone else's behalf.
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Resolve the locale on the server so `lang`, `dir`, and every translated
+  // string are correct in the very first byte of HTML. Reading the cookie opts
+  // this layout into dynamic rendering, which is the right trade for an app
+  // whose only indexable surface is the landing page: it buys a flash-free,
+  // hydration-safe RTL flip in exchange for per-request rendering.
+  const stored = (await cookies()).get(LOCALE_COOKIE)?.value;
+  const locale = isLocale(stored) ? stored : DEFAULT_LOCALE;
+  const dir = LOCALE_META[locale].dir;
+
   return (
     <html
-      lang="en"
-      // next-themes rewrites `data-theme` before paint; without this, React
+      lang={locale}
+      dir={dir}
+      // next-themes rewrites `data-theme` before paint; without this React
       // reports the server/client difference as a hydration error.
       suppressHydrationWarning
-      className={`${instrumentSans.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${instrumentSans.variable} ${inter.variable} ${jetbrainsMono.variable} ${plexArabic.variable}`}
     >
       <body className="min-h-dvh bg-canvas text-ink antialiased">
-        <ThemeProvider>
-          <MotionProvider>
-            {/* Mounted at the root so any page can use a tooltip without
-                remembering to wrap itself — Radix throws outright when the
-                provider is missing, so a per-page provider turns a forgotten
-                wrapper into a crashed route. One provider also shares the
-                delay timer, so neighbouring tooltips open instantly after
-                the first. */}
-            <TooltipProvider>
-              <a
-                href="#main"
-                className="sr-only rounded-lg bg-accent px-4 py-2 text-on-accent focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50"
-              >
-                Skip to content
-              </a>
-              {children}
-            </TooltipProvider>
-          </MotionProvider>
-        </ThemeProvider>
+        <LocaleProvider initialLocale={locale}>
+          <ThemeProvider>
+            <MotionProvider>
+              {/* Mounted at the root so any page can use a tooltip without
+                  remembering to wrap itself — Radix throws outright when the
+                  provider is missing, so a per-page provider turns a forgotten
+                  wrapper into a crashed route. One provider also shares the
+                  delay timer, so neighbouring tooltips open instantly after
+                  the first. */}
+              <TooltipProvider>
+                <SkipLink />
+                {children}
+              </TooltipProvider>
+            </MotionProvider>
+          </ThemeProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

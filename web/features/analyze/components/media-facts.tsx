@@ -3,6 +3,7 @@
 import { Camera, Copy, Info, MapPin, Wrench } from "lucide-react";
 import { useCallback, useState } from "react";
 
+import { fill, useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -47,6 +48,7 @@ function Row({
  * and prevents a confident wrong conclusion.
  */
 export function MediaFactsPanel({ facts }: { facts: MediaFacts }) {
+  const { t } = useLocale();
   const [copied, setCopied] = useState(false);
 
   const copyHash = useCallback(async () => {
@@ -61,24 +63,26 @@ export function MediaFactsPanel({ facts }: { facts: MediaFacts }) {
   }, [facts.sha256]);
 
   const resolution =
-    facts.width && facts.height ? `${facts.width} × ${facts.height}` : "Unavailable";
+    facts.width && facts.height
+      ? `${facts.width} × ${facts.height}`
+      : t.facts.unavailable;
 
   return (
     <Card variant="surface" padding="none" className="overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
-        <h2 className="font-display text-h4 text-ink">File facts</h2>
+        <h2 className="font-display text-h4 text-ink">{t.facts.title}</h2>
         <Badge variant="neutral" size="sm">
-          Measured
+          {t.facts.measured}
         </Badge>
       </div>
 
       <dl className="flex flex-col px-5 py-2">
-        <Row label="Name" value={facts.name} />
-        <Row label="Type" value={facts.mimeType} />
-        <Row label="Size" value={facts.sizeLabel} />
-        <Row label="Resolution" value={resolution} />
+        <Row label={t.facts.name} value={facts.name} />
+        <Row label={t.facts.type} value={facts.mimeType} />
+        <Row label={t.facts.size} value={facts.sizeLabel} />
+        <Row label={t.facts.resolution} value={resolution} />
         {facts.durationSeconds !== undefined && (
-          <Row label="Duration" value={formatDuration(facts.durationSeconds)} />
+          <Row label={t.facts.duration} value={formatDuration(facts.durationSeconds)} />
         )}
       </dl>
 
@@ -98,24 +102,24 @@ export function MediaFactsPanel({ facts }: { facts: MediaFacts }) {
             )}
           >
             <Copy className="size-3.5" aria-hidden="true" />
-            {copied ? "Copied" : "Copy"}
+            {copied ? t.facts.copied : t.facts.copy}
           </button>
         </div>
         <p className="mt-1.5 font-mono text-micro leading-relaxed break-all text-ink-muted">
           {facts.sha256}
         </p>
-        <p className="mt-2 text-caption text-ink-faint">
-          Identifies the exact bytes analysed, independent of the filename.
-        </p>
+        <p className="mt-2 text-caption text-ink-faint">{t.facts.hashNote}</p>
       </div>
 
       <Separator />
 
       <div className="flex flex-col gap-3 px-5 py-4">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-caption text-ink-faint">Embedded metadata</span>
+          <span className="text-caption text-ink-faint">{t.facts.embeddedMetadata}</span>
           <Badge variant={facts.hasExif ? "success" : "warning"} size="sm" dot>
-            {facts.hasExif ? `${facts.exifTagCount} tags` : "None found"}
+            {facts.hasExif
+              ? fill(t.facts.tags, { count: facts.exifTagCount })
+              : t.facts.noneFound}
           </Badge>
         </div>
 
@@ -123,13 +127,16 @@ export function MediaFactsPanel({ facts }: { facts: MediaFacts }) {
           <dl className="flex flex-col">
             {facts.cameraMake && (
               <Row
-                label="Camera"
+                label={t.facts.camera}
                 value={[facts.cameraMake, facts.cameraModel].filter(Boolean).join(" ")}
               />
             )}
-            {facts.software && <Row label="Software" value={facts.software} />}
+            {facts.software && <Row label={t.facts.software} value={facts.software} />}
             {facts.capturedAt && (
-              <Row label="Captured" value={new Date(facts.capturedAt).toLocaleString()} />
+              <Row
+                label={t.facts.captured}
+                value={new Date(facts.capturedAt).toLocaleString()}
+              />
             )}
           </dl>
         ) : null}
@@ -137,17 +144,17 @@ export function MediaFactsPanel({ facts }: { facts: MediaFacts }) {
         <div className="flex flex-wrap gap-2">
           {facts.cameraMake && (
             <Badge variant="success" size="sm" icon={<Camera />}>
-              Camera signature
+              {t.facts.cameraSignature}
             </Badge>
           )}
           {facts.software && (
             <Badge variant="warning" size="sm" icon={<Wrench />}>
-              Editing software tag
+              {t.facts.editingSoftware}
             </Badge>
           )}
           {facts.hasGps && (
             <Badge variant="accent" size="sm" icon={<MapPin />}>
-              Location present
+              {t.facts.locationPresent}
             </Badge>
           )}
         </div>
@@ -156,9 +163,7 @@ export function MediaFactsPanel({ facts }: { facts: MediaFacts }) {
         <div className="flex gap-2 rounded-lg bg-surface-inset p-3">
           <Info className="mt-0.5 size-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
           <p className="text-caption text-ink-faint">
-            {facts.hasExif
-              ? "Metadata can be edited or fabricated. Treat it as one signal among several, not as proof of origin."
-              : "Missing metadata is weak evidence on its own — X, Instagram, WhatsApp and most other platforms strip it from every upload."}
+            {facts.hasExif ? t.facts.metadataPresentNote : t.facts.metadataAbsentNote}
           </p>
         </div>
       </div>
@@ -180,6 +185,7 @@ export function MediaPreview({
   facts: MediaFacts;
   objectUrl: string;
 }) {
+  const { t } = useLocale();
   const ratio =
     facts.width && facts.height ? `${facts.width} / ${facts.height}` : "16 / 9";
 
@@ -210,9 +216,9 @@ export function MediaPreview({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-3">
-        <Tooltip content="Analysed locally in your browser. Nothing has been uploaded.">
+        <Tooltip content={t.facts.processedTooltip}>
           <span className="cursor-help text-caption text-ink-faint underline decoration-dotted underline-offset-4">
-            Processed on this device
+            {t.facts.processedLocally}
           </span>
         </Tooltip>
         <span className="tabular text-caption text-ink-faint">

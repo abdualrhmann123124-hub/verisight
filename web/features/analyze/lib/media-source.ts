@@ -6,7 +6,16 @@
  *
  * The rule from the brief that shapes this file: an unsupported input must
  * never fail silently. Every rejection returns a reason the user can act on.
+ *
+ * The reason strings are passed in rather than hard-coded, so this validator
+ * stays locale-agnostic and the copy lives in one place with the rest of the
+ * dictionary.
  */
+
+import type { Dictionary } from "@/lib/i18n/dictionaries/en";
+
+/** The `validation` slice of the dictionary — the messages this file needs. */
+export type ValidationMessages = Dictionary["validation"];
 
 export const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
@@ -117,7 +126,7 @@ const HOSTNAME_PATTERN = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i;
  * Runs on every keystroke to drive the input's live feedback, so it stays
  * purely syntactic — no network, no allocation beyond the parse.
  */
-export function checkMediaUrl(raw: string): UrlCheck {
+export function checkMediaUrl(raw: string, msg: ValidationMessages): UrlCheck {
   const value = raw.trim();
   if (!value) return { status: "empty" };
 
@@ -127,14 +136,11 @@ export function checkMediaUrl(raw: string): UrlCheck {
     // "imgur.com/abc" means.
     url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
   } catch {
-    return { status: "invalid", message: "That does not look like a valid URL." };
+    return { status: "invalid", message: msg.urlMalformed };
   }
 
   if (url.protocol !== "https:" && url.protocol !== "http:") {
-    return {
-      status: "invalid",
-      message: "Only http and https links are supported.",
-    };
+    return { status: "invalid", message: msg.urlProtocol };
   }
 
   const hostname = url.hostname.replace(/^www\./, "");
@@ -142,14 +148,11 @@ export function checkMediaUrl(raw: string): UrlCheck {
   // Checked before the protocol warning: telling someone their nonsense
   // string should use https would be actively confusing.
   if (!HOSTNAME_PATTERN.test(hostname)) {
-    return { status: "invalid", message: "That does not look like a valid URL." };
+    return { status: "invalid", message: msg.urlMalformed };
   }
 
   if (url.protocol === "http:") {
-    return {
-      status: "insecure",
-      message: "Use an https link — plain http downloads can be tampered with.",
-    };
+    return { status: "insecure", message: msg.urlInsecure };
   }
 
   const platform = SUPPORTED_PLATFORMS.find((p) =>
@@ -164,7 +167,7 @@ export function checkMediaUrl(raw: string): UrlCheck {
   return {
     status: "unsupported",
     hostname,
-    message: `${hostname} is not a recognised source. Paste a direct link to an image or video file instead.`,
+    message: msg.urlUnsupported.replace("{host}", hostname),
   };
 }
 
@@ -189,7 +192,7 @@ export function formatBytes(bytes: number): string {
  * trivially spoofed, so the server re-validates by inspecting actual file
  * headers before anything is decoded (Phase 4).
  */
-export function checkMediaFile(file: File): FileCheck {
+export function checkMediaFile(file: File, msg: ValidationMessages): FileCheck {
   const name = file.name.toLowerCase();
   const isImage =
     (ACCEPTED_IMAGE_TYPES as readonly string[]).includes(file.type) ||
@@ -199,21 +202,20 @@ export function checkMediaFile(file: File): FileCheck {
     /\.(mp4|mov|webm)$/.test(name);
 
   if (!isImage && !isVideo) {
-    return {
-      status: "error",
-      message: "Unsupported format. Use PNG, JPG, WEBP, MP4, MOV, or WEBM.",
-    };
+    return { status: "error", message: msg.fileFormat };
   }
 
   if (file.size === 0) {
-    return { status: "error", message: "That file is empty or unreadable." };
+    return { status: "error", message: msg.fileEmpty };
   }
 
   const limit = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
   if (file.size > limit) {
     return {
       status: "error",
-      message: `That file is ${formatBytes(file.size)}. The limit is ${formatBytes(limit)}.`,
+      message: msg.fileTooLarge
+        .replace("{size}", formatBytes(file.size))
+        .replace("{limit}", formatBytes(limit)),
     };
   }
 

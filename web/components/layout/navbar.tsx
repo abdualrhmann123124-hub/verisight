@@ -7,17 +7,15 @@ import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/brand/logo";
 import { Container } from "@/components/layout/container";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
+import { LanguageToggle } from "@/components/ui/language-toggle";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { DURATION, EASE_OUT_EXPO, SPRING_UI } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-const NAV_LINKS = [
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#technology", label: "Technology" },
-  { href: "#example", label: "Example" },
-  { href: "#faq", label: "FAQ" },
-] as const;
+// Section anchors are fixed; labels come from the active dictionary.
+const NAV_ANCHORS = ["#how-it-works", "#technology", "#example", "#faq"] as const;
 
 /**
  * Sticky top navigation.
@@ -28,8 +26,16 @@ const NAV_LINKS = [
  * reason.
  */
 export function Navbar() {
+  const { t } = useLocale();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const navLinks = [
+    { href: NAV_ANCHORS[0], label: t.nav.howItWorks },
+    { href: NAV_ANCHORS[1], label: t.nav.technology },
+    { href: NAV_ANCHORS[2], label: t.nav.example },
+    { href: NAV_ANCHORS[3], label: t.nav.faq },
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -71,13 +77,13 @@ export function Navbar() {
         <Link
           href="/"
           className="rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-          aria-label="VeriSight home"
+          aria-label={t.nav.home}
         >
           <Logo />
         </Link>
 
         <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
@@ -93,23 +99,22 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
-          <ThemeToggle />
-          <Button variant="ghost" size="sm">
-            Sign in
-          </Button>
+          <LanguageToggle />
+          <ThemeToggle label={t.nav.toggleTheme} />
           <Button size="sm" asChild>
-            <Link href="/analyze">Analyze media</Link>
+            <Link href="/analyze">{t.nav.analyzeMedia}</Link>
           </Button>
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
-          <ThemeToggle />
+          <LanguageToggle />
+          <ThemeToggle label={t.nav.toggleTheme} />
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-label={menuOpen ? t.nav.closeMenu : t.nav.openMenu}
             className={cn(
               "grid size-10 cursor-pointer place-items-center rounded-lg",
               "border border-line bg-surface-raised text-ink-muted",
@@ -137,7 +142,7 @@ export function Navbar() {
             className="glass absolute inset-x-0 top-full border-b md:hidden"
           >
             <Container className="flex flex-col gap-1 py-4">
-              {NAV_LINKS.map((link) => (
+              {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
@@ -152,12 +157,9 @@ export function Navbar() {
                 </a>
               ))}
               <div className="mt-3 flex flex-col gap-2 border-t border-line pt-4">
-                <Button variant="secondary" onClick={() => setMenuOpen(false)}>
-                  Sign in
-                </Button>
                 <Button asChild>
                   <Link href="/analyze" onClick={() => setMenuOpen(false)}>
-                    Analyze media
+                    {t.nav.analyzeMedia}
                   </Link>
                 </Button>
               </div>

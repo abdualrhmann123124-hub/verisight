@@ -5,6 +5,7 @@ import { CircleDashed, Info, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Container, Section } from "@/components/layout/container";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { Reveal } from "@/components/motion/reveal";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { CircularProgress, Progress } from "@/components/ui/progress";
@@ -18,34 +19,15 @@ import { SectionHeading } from "@/features/landing/components/section-heading";
  * badge, a sentence in the description, and a note beneath the card. The brief
  * allows sample data only when clearly labelled, and for a product whose whole
  * value is not overstating confidence, an unlabelled mock-up would be the most
- * damaging possible shortcut.
+ * damaging possible shortcut. Numbers and tones are fixed here; every string
+ * comes from the dictionary.
  */
 const SAMPLE_FINDINGS = [
-  {
-    label: "Metadata",
-    tone: "warning" as const,
-    confidence: 72,
-    note: "No camera signature; software tag indicates re-export.",
-  },
-  {
-    label: "Frequency",
-    tone: "danger" as const,
-    confidence: 88,
-    note: "Periodic artefacts consistent with generative upsampling.",
-  },
-  {
-    label: "Sensor noise",
-    tone: "danger" as const,
-    confidence: 81,
-    note: "Noise pattern is uniform where it should vary.",
-  },
-  {
-    label: "Lighting",
-    tone: "success" as const,
-    confidence: 64,
-    note: "Light direction is physically consistent across subjects.",
-  },
-];
+  { key: "metadata", tone: "warning", confidence: 72 },
+  { key: "frequency", tone: "danger", confidence: 88 },
+  { key: "noise", tone: "danger", confidence: 81 },
+  { key: "lighting", tone: "success", confidence: 64 },
+] as const;
 
 const TONE_BAR = {
   success: "success",
@@ -53,14 +35,36 @@ const TONE_BAR = {
   danger: "danger",
 } as const;
 
+// The verdict spectrum, low-to-high synthetic likelihood. Labels are read from
+// the shared verdict dictionary so they match the real report's wording.
+const SPECTRUM = [
+  { id: "authentic", Icon: ShieldCheck },
+  { id: "leaning-authentic", Icon: ShieldCheck },
+  { id: "inconclusive", Icon: CircleDashed },
+  { id: "leaning-synthetic", Icon: ShieldAlert },
+  { id: "synthetic", Icon: ShieldAlert },
+] as const;
+
 export function ExampleAnalysis() {
+  const { t } = useLocale();
+
+  const findingText: Record<
+    (typeof SAMPLE_FINDINGS)[number]["key"],
+    { label: string; note: string }
+  > = {
+    metadata: { label: t.example.labelMetadata, note: t.example.findingMetadata },
+    frequency: { label: t.example.labelFrequency, note: t.example.findingFrequency },
+    noise: { label: t.example.labelNoise, note: t.example.findingNoise },
+    lighting: { label: t.example.labelLighting, note: t.example.findingLighting },
+  };
+
   return (
     <Section id="example" spacing="lg">
       <Container>
         <SectionHeading
-          eyebrow="Example"
-          title="What a report looks like"
-          description="A worked illustration of the report format. The figures below are sample values chosen to demonstrate the layout — they are not the result of a real analysis."
+          eyebrow={t.example.eyebrow}
+          title={t.example.title}
+          description={t.example.description}
         />
 
         <Reveal delay={0.05} className="mt-14">
@@ -68,15 +72,13 @@ export function ExampleAnalysis() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4">
               <div className="flex items-center gap-3">
                 <Badge variant="warning" dot>
-                  Illustrative sample
+                  {t.example.badge}
                 </Badge>
                 <span className="font-mono text-caption text-ink-faint">
                   press-photo-2024.jpg
                 </span>
               </div>
-              <span className="text-caption text-ink-faint">
-                Processed in 4.2s · 9 analyzers
-              </span>
+              <span className="text-caption text-ink-faint">{t.example.processed}</span>
             </div>
 
             <div className="grid gap-10 p-6 sm:p-8 lg:grid-cols-[auto_1fr] lg:gap-14">
@@ -84,7 +86,7 @@ export function ExampleAnalysis() {
                 <CircularProgress
                   value={78}
                   size={196}
-                  label="Example AI generation likelihood"
+                  label={t.example.likelihood}
                   color="var(--verdict-leaning-synthetic)"
                 >
                   <div className="flex flex-col items-center">
@@ -94,7 +96,7 @@ export function ExampleAnalysis() {
                       className="font-display text-display-lg text-ink"
                     />
                     <span className="mt-1 text-caption text-ink-muted">
-                      AI likelihood
+                      {t.example.likelihood}
                     </span>
                   </div>
                 </CircularProgress>
@@ -104,18 +106,28 @@ export function ExampleAnalysis() {
                   style={{ color: "var(--verdict-leaning-synthetic)" }}
                 >
                   <ShieldAlert className="size-4.5" aria-hidden="true" />
-                  <span className="text-body font-medium">Leaning Synthetic</span>
+                  <span className="text-body font-medium">
+                    {t.verdict["leaning-synthetic"]}
+                  </span>
                 </div>
 
                 <div className="flex gap-6 text-center">
                   <div className="flex flex-col">
-                    <span className="text-caption text-ink-faint">Confidence</span>
-                    <span className="text-body-sm font-medium text-ink">Moderate</span>
+                    <span className="text-caption text-ink-faint">
+                      {t.example.confidence}
+                    </span>
+                    <span className="text-body-sm font-medium text-ink">
+                      {t.example.moderate}
+                    </span>
                   </div>
                   <Separator orientation="vertical" className="h-auto" />
                   <div className="flex flex-col">
-                    <span className="text-caption text-ink-faint">Reliability</span>
-                    <span className="text-body-sm font-medium text-ink">Good</span>
+                    <span className="text-caption text-ink-faint">
+                      {t.example.reliability}
+                    </span>
+                    <span className="text-body-sm font-medium text-ink">
+                      {t.example.good}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -126,20 +138,15 @@ export function ExampleAnalysis() {
                     className="mt-0.5 size-4 shrink-0 text-ink-faint"
                     aria-hidden="true"
                   />
-                  <p className="text-body-sm text-ink-muted">
-                    Several indicators associated with generated media are present, most
-                    notably in the frequency and sensor-noise analyses. Lighting remains
-                    physically consistent, which argues against generation. This is a
-                    confidence estimate, not proof.
-                  </p>
+                  <p className="text-body-sm text-ink-muted">{t.example.summary}</p>
                 </div>
 
                 <div className="flex flex-col gap-4">
                   {SAMPLE_FINDINGS.map((finding) => (
-                    <div key={finding.label} className="flex flex-col gap-2">
+                    <div key={finding.key} className="flex flex-col gap-2">
                       <div className="flex items-baseline justify-between gap-4">
                         <span className="text-body-sm font-medium text-ink">
-                          {finding.label}
+                          {findingText[finding.key].label}
                         </span>
                         <span className="tabular text-caption text-ink-faint">
                           {finding.confidence}%
@@ -149,9 +156,11 @@ export function ExampleAnalysis() {
                         value={finding.confidence}
                         tone={TONE_BAR[finding.tone]}
                         size="sm"
-                        aria-label={`${finding.label} — example confidence`}
+                        aria-label={findingText[finding.key].label}
                       />
-                      <p className="text-caption text-ink-faint">{finding.note}</p>
+                      <p className="text-caption text-ink-faint">
+                        {findingText[finding.key].note}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -163,10 +172,7 @@ export function ExampleAnalysis() {
                 className="mt-0.5 size-3.5 shrink-0 text-ink-faint"
                 aria-hidden="true"
               />
-              <p className="text-caption text-ink-faint">
-                Sample data for layout demonstration only. No media was analyzed to
-                produce these figures.
-              </p>
+              <p className="text-caption text-ink-faint">{t.example.disclaimer}</p>
             </div>
           </Card>
         </Reveal>
@@ -174,31 +180,17 @@ export function ExampleAnalysis() {
         <Reveal delay={0.1} className="mt-12">
           <div className="flex flex-col items-center gap-4">
             <p className="text-caption tracking-wide text-ink-faint uppercase">
-              Results are reported on a spectrum
+              {t.example.spectrumLabel}
             </p>
             <ul className="flex flex-wrap items-center justify-center gap-2">
-              {[
-                { id: "authentic", label: "Likely Authentic", Icon: ShieldCheck },
-                {
-                  id: "leaning-authentic",
-                  label: "Leaning Authentic",
-                  Icon: ShieldCheck,
-                },
-                { id: "inconclusive", label: "Inconclusive", Icon: CircleDashed },
-                {
-                  id: "leaning-synthetic",
-                  label: "Leaning Synthetic",
-                  Icon: ShieldAlert,
-                },
-                { id: "synthetic", label: "Likely Synthetic", Icon: ShieldAlert },
-              ].map(({ id, label, Icon }) => (
+              {SPECTRUM.map(({ id, Icon }) => (
                 <li
                   key={id}
                   className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5"
                   style={{ color: `var(--verdict-${id})` }}
                 >
                   <Icon className="size-3.5" aria-hidden="true" />
-                  <span className="text-caption font-medium">{label}</span>
+                  <span className="text-caption font-medium">{t.verdict[id]}</span>
                 </li>
               ))}
             </ul>

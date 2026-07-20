@@ -1,6 +1,10 @@
 import exifr from "exifr";
 
-import { checkMediaFile, formatBytes } from "@/features/analyze/lib/media-source";
+import {
+  checkMediaFile,
+  formatBytes,
+  type ValidationMessages,
+} from "@/features/analyze/lib/media-source";
 
 /**
  * Client-side preflight.
@@ -122,6 +126,7 @@ function toHex(buffer: ArrayBuffer): string {
 function decodeMedia(
   file: File,
   kind: "image" | "video",
+  messages: ValidationMessages,
 ): Promise<{ width: number; height: number; durationSeconds?: number }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -132,9 +137,9 @@ function decodeMedia(
       cleanup();
       reject(
         new PreflightError(
-          "The file took too long to decode.",
+          messages.decodeTimeout,
           "decode",
-          "It may be very large or partially corrupted. Try a smaller file.",
+          messages.decodeTimeoutRecovery,
         ),
       );
     }, 15000);
@@ -144,9 +149,9 @@ function decodeMedia(
       cleanup();
       reject(
         new PreflightError(
-          "This file could not be decoded.",
+          messages.decodeFailed,
           "decode",
-          "It appears corrupted or is not the format its extension claims. Try re-exporting it.",
+          messages.decodeFailedRecovery,
         ),
       );
     };
@@ -260,6 +265,7 @@ export interface PreflightCallbacks {
 export async function runPreflight(
   file: File,
   { onStageChange }: PreflightCallbacks,
+  messages: ValidationMessages,
 ): Promise<MediaFacts> {
   /**
    * Lets React paint the "active" state before the work blocks the thread.
@@ -305,13 +311,9 @@ export async function runPreflight(
   };
 
   const kind = await runStage("validate", () => {
-    const check = checkMediaFile(file);
+    const check = checkMediaFile(file, messages);
     if (check.status === "error") {
-      throw new PreflightError(
-        check.message,
-        "validate",
-        "Use PNG, JPG, or WEBP for images, or MP4, MOV, or WEBM for video.",
-      );
+      throw new PreflightError(check.message, "validate", messages.formatRecovery);
     }
     return check.kind;
   });
@@ -320,11 +322,7 @@ export async function runPreflight(
     try {
       return await file.arrayBuffer();
     } catch {
-      throw new PreflightError(
-        "The file could not be read.",
-        "read",
-        "It may have been moved or deleted since you selected it. Try selecting it again.",
-      );
+      throw new PreflightError(messages.readFailed, "read", messages.readFailedRecovery);
     }
   });
 
@@ -335,7 +333,7 @@ export async function runPreflight(
     return toHex(digest);
   });
 
-  const dimensions = await runStage("decode", () => decodeMedia(file, kind));
+  const dimensions = await runStage("decode", () => decodeMedia(file, kind, messages));
   const metadata = await runStage("metadata", () => readMetadata(file));
 
   return {

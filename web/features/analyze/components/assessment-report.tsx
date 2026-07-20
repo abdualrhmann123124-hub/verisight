@@ -14,6 +14,7 @@ import { useState } from "react";
 
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
+import { fill, useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { CircularProgress, Progress } from "@/components/ui/progress";
@@ -49,6 +50,7 @@ const ICONS = {
  *    are where a user learns that missing metadata means very little.
  */
 export function AssessmentReport({ result }: { result: AnalysisResponse }) {
+  const { t } = useLocale();
   const { assessment } = result;
   const presentation = VERDICT_PRESENTATION[assessment.verdict];
   const VerdictIcon = ICONS[presentation.icon as keyof typeof ICONS];
@@ -60,10 +62,11 @@ export function AssessmentReport({ result }: { result: AnalysisResponse }) {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-6 py-4">
             <div className="flex items-center gap-3">
               <Badge variant="neutral" size="sm">
-                Engine v{result.engine_version}
+                {fill(t.report.engineVersion, { version: result.engine_version })}
               </Badge>
               <span className="font-mono text-caption text-ink-faint">
-                {result.processing_ms}ms · {assessment.findings.length} analyzers
+                {result.processing_ms}ms ·{" "}
+                {fill(t.report.analyzers, { count: assessment.findings.length })}
               </span>
             </div>
             <span className="text-caption text-ink-faint">
@@ -76,7 +79,7 @@ export function AssessmentReport({ result }: { result: AnalysisResponse }) {
               <CircularProgress
                 value={assessment.synthetic_likelihood}
                 size={188}
-                label="Indicative synthetic score"
+                label={t.report.indicativeScore}
                 color={`var(${presentation.token})`}
               >
                 <div className="flex flex-col items-center">
@@ -87,7 +90,7 @@ export function AssessmentReport({ result }: { result: AnalysisResponse }) {
                     className="font-display text-display-lg text-ink"
                   />
                   <span className="mt-1 max-w-28 text-center text-caption text-ink-muted">
-                    Indicative score
+                    {t.report.indicativeScore}
                   </span>
                 </div>
               </CircularProgress>
@@ -97,12 +100,14 @@ export function AssessmentReport({ result }: { result: AnalysisResponse }) {
                 style={{ color: `var(${presentation.token})` }}
               >
                 <VerdictIcon className="size-5 shrink-0" aria-hidden="true" />
-                <span className="text-body font-medium">{presentation.label}</span>
+                <span className="text-body font-medium">
+                  {t.verdict[assessment.verdict]}
+                </span>
               </div>
 
               <div className="w-full max-w-56">
                 <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                  <span className="text-caption text-ink-faint">Evidence</span>
+                  <span className="text-caption text-ink-faint">{t.report.evidence}</span>
                   <span className="tabular text-caption text-ink-muted">
                     {Math.round(assessment.evidence_strength)}%
                   </span>
@@ -111,12 +116,12 @@ export function AssessmentReport({ result }: { result: AnalysisResponse }) {
                   value={assessment.evidence_strength}
                   size="sm"
                   tone={assessment.evidence_strength < 40 ? "warning" : "accent"}
-                  aria-label="How much usable evidence was available"
+                  aria-label={t.report.evidence}
                 />
                 <p className="mt-2 text-caption text-ink-faint">
                   {assessment.evidence_strength < 40
-                    ? "Most analyzers found little to work with."
-                    : "Several analyzers contributed measurements."}
+                    ? t.report.evidenceLow
+                    : t.report.evidenceOk}
                 </p>
               </div>
             </div>
@@ -148,7 +153,7 @@ export function AssessmentReport({ result }: { result: AnalysisResponse }) {
         <Card variant="outline" padding="lg">
           <h3 className="flex items-center gap-2 font-display text-h4 text-ink">
             <TriangleAlert className="size-4.5 text-warning" aria-hidden="true" />
-            What this cannot tell you
+            {t.report.limitationsTitle}
           </h3>
           <ul className="mt-4 flex flex-col gap-2.5">
             {assessment.limitations.map((limitation) => (
@@ -168,23 +173,21 @@ export function AssessmentReport({ result }: { result: AnalysisResponse }) {
 }
 
 function UncalibratedNotice() {
+  const { t } = useLocale();
+
   return (
     <div className="flex gap-3 rounded-xl border border-warning/30 bg-warning-subtle p-4">
       <FlaskConical className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
       <div className="flex flex-col gap-1">
-        <p className="text-body-sm font-medium text-ink">This score is not calibrated</p>
-        <p className="text-caption text-ink-muted">
-          It is a weighted combination of forensic heuristics, not a probability. The
-          weights have not yet been validated against a labelled dataset, so treat the
-          score as a pointer toward the evidence below rather than as a measurement in its
-          own right.
-        </p>
+        <p className="text-body-sm font-medium text-ink">{t.report.notCalibratedTitle}</p>
+        <p className="text-caption text-ink-muted">{t.report.notCalibratedBody}</p>
       </div>
     </div>
   );
 }
 
 function FindingCard({ finding }: { finding: Finding }) {
+  const { t } = useLocale();
   const [showDetail, setShowDetail] = useState(false);
   const direction = DIRECTION_PRESENTATION[finding.direction];
   const measurements = Object.entries(finding.measurements).filter(
@@ -200,7 +203,7 @@ function FindingCard({ finding }: { finding: Finding }) {
           style={{ color: `var(${direction.token})` }}
         >
           <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-          <span className="text-micro font-medium">{direction.label}</span>
+          <span className="text-micro font-medium">{t.direction[finding.direction]}</span>
         </span>
       </div>
 
@@ -208,7 +211,7 @@ function FindingCard({ finding }: { finding: Finding }) {
 
       <div className="mt-auto flex flex-col gap-2 pt-2">
         <div className="flex items-baseline justify-between gap-3">
-          <span className="text-caption text-ink-faint">Signal strength</span>
+          <span className="text-caption text-ink-faint">{t.report.signalStrength}</span>
           <span className="tabular text-caption text-ink-muted">
             {Math.round(finding.strength * 100)}%
           </span>
@@ -223,7 +226,7 @@ function FindingCard({ finding }: { finding: Finding }) {
                 ? "success"
                 : "neutral"
           }
-          aria-label={`${finding.label} signal strength`}
+          aria-label={`${finding.label} — ${t.report.signalStrength}`}
         />
       </div>
 
@@ -246,7 +249,7 @@ function FindingCard({ finding }: { finding: Finding }) {
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
             )}
           >
-            {showDetail ? "Hide" : "Show"} raw measurements
+            {showDetail ? t.report.hideMeasurements : t.report.showMeasurements}
           </button>
           {showDetail && (
             <dl className="flex flex-col gap-1.5">

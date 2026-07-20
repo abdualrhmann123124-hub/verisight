@@ -1,8 +1,11 @@
+"use client";
+
 import { ShieldCheck } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
 import { AuroraBackground } from "@/components/motion/aurora-background";
 import { Reveal } from "@/components/motion/reveal";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { MediaInput } from "@/features/analyze/components/media-input";
 import { SUPPORTED_PLATFORMS } from "@/features/analyze/lib/media-source";
@@ -17,6 +20,8 @@ import { SUPPORTED_PLATFORMS } from "@/features/analyze/lib/media-source";
  * the eye away from the thing the user actually has to interact with.
  */
 export function Hero() {
+  const { t } = useLocale();
+
   return (
     <section id="analyze" className="relative overflow-hidden pt-32 pb-20 sm:pt-40">
       <AuroraBackground />
@@ -24,23 +29,21 @@ export function Hero() {
       <Container className="flex flex-col items-center">
         <Reveal>
           <Badge variant="accent" icon={<ShieldCheck />} size="lg">
-            Confidence-based media verification
+            {t.hero.badge}
           </Badge>
         </Reveal>
 
         <Reveal delay={0.05}>
           <h1 className="mt-8 max-w-4xl text-center font-display text-display-lg text-ink sm:text-display-xl lg:text-display-2xl">
-            Verify digital media
+            {t.hero.headlineTop}
             <br />
-            <span className="text-gradient">before you trust it.</span>
+            <span className="text-gradient">{t.hero.headlineBottom}</span>
           </h1>
         </Reveal>
 
         <Reveal delay={0.1}>
           <p className="mt-6 max-w-2xl text-center text-body-lg text-ink-muted">
-            Analyze images and videos using AI-assisted digital forensic techniques to
-            estimate authenticity — with transparent confidence scoring and evidence you
-            can inspect.
+            {t.hero.subtitle}
           </p>
         </Reveal>
 
@@ -51,7 +54,7 @@ export function Hero() {
         <Reveal delay={0.2} className="mt-14 w-full">
           <div className="flex flex-col items-center gap-4">
             <p className="text-caption tracking-wide text-ink-faint uppercase">
-              Accepts public links from
+              {t.hero.platformsLabel}
             </p>
             <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
               {SUPPORTED_PLATFORMS.map((platform) => (

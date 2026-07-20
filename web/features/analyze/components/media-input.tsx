@@ -25,6 +25,7 @@ import {
   type ClipboardEvent,
 } from "react";
 
+import { fill, useLocale } from "@/components/providers/locale-provider";
 import { Button } from "@/components/ui/button";
 import { DURATION, EASE_OUT_EXPO, SPRING_UI } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,7 @@ interface SelectedFile {
  * field says so plainly instead of accepting a URL that leads nowhere.
  */
 export function MediaInput() {
+  const { t } = useLocale();
   const [url, setUrl] = useState("");
   const [check, setCheck] = useState<UrlCheck>({ status: "empty" });
   const [file, setFile] = useState<SelectedFile | null>(null);
@@ -83,39 +85,45 @@ export function MediaInput() {
     };
   }, [file]);
 
-  const acceptFile = useCallback((candidate: File) => {
-    const result = checkMediaFile(candidate);
-    if (result.status === "error") {
-      setFileError(result.message);
-      setFile(null);
-      return;
-    }
-    setFileError(null);
-    setUrl("");
-    setCheck({ status: "empty" });
-    setFile((previous) => {
-      if (previous) URL.revokeObjectURL(previous.previewUrl);
-      return {
-        name: candidate.name,
-        size: candidate.size,
-        kind: result.kind,
-        previewUrl: URL.createObjectURL(candidate),
-        source: candidate,
-      };
-    });
-  }, []);
-
-  const handleUrlChange = useCallback((value: string) => {
-    setUrl(value);
-    setCheck(checkMediaUrl(value));
-    if (value) {
+  const acceptFile = useCallback(
+    (candidate: File) => {
+      const result = checkMediaFile(candidate, t.validation);
+      if (result.status === "error") {
+        setFileError(result.message);
+        setFile(null);
+        return;
+      }
       setFileError(null);
+      setUrl("");
+      setCheck({ status: "empty" });
       setFile((previous) => {
         if (previous) URL.revokeObjectURL(previous.previewUrl);
-        return null;
+        return {
+          name: candidate.name,
+          size: candidate.size,
+          kind: result.kind,
+          previewUrl: URL.createObjectURL(candidate),
+          source: candidate,
+        };
       });
-    }
-  }, []);
+    },
+    [t],
+  );
+
+  const handleUrlChange = useCallback(
+    (value: string) => {
+      setUrl(value);
+      setCheck(checkMediaUrl(value, t.validation));
+      if (value) {
+        setFileError(null);
+        setFile((previous) => {
+          if (previous) URL.revokeObjectURL(previous.previewUrl);
+          return null;
+        });
+      }
+    },
+    [t],
+  );
 
   // Pasting an image straight from the clipboard is a real workflow —
   // screenshots never touch the filesystem.
@@ -218,7 +226,7 @@ export function MediaInput() {
                 >
                   <Upload className="size-7" aria-hidden="true" />
                 </motion.div>
-                <p className="text-body-sm font-medium">Drop to load media</p>
+                <p className="text-body-sm font-medium">{t.input.dropToLoad}</p>
               </div>
             </motion.div>
           )}
@@ -244,8 +252,8 @@ export function MediaInput() {
               onChange={(e) => handleUrlChange(e.target.value)}
               onPaste={handlePaste}
               disabled={Boolean(file)}
-              placeholder="Paste a public image or video link"
-              aria-label="Media URL"
+              placeholder={t.input.urlPlaceholder}
+              aria-label={t.input.urlLabel}
               aria-invalid={
                 check.status === "invalid" ||
                 check.status === "unsupported" ||
@@ -262,7 +270,7 @@ export function MediaInput() {
               <button
                 type="button"
                 onClick={() => handleUrlChange("")}
-                aria-label="Clear URL"
+                aria-label={t.input.clearUrl}
                 className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md text-ink-faint transition-colors hover:bg-surface-overlay hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               >
                 <X className="size-4" aria-hidden="true" />
@@ -287,18 +295,18 @@ export function MediaInput() {
               leadingIcon={<Upload />}
               onClick={() => fileInputRef.current?.click()}
             >
-              Upload
+              {t.input.upload}
             </Button>
             <Button
               size="lg"
               className="h-14 flex-1 sm:flex-none"
               disabled={!canAnalyze}
               loading={pending}
-              loadingLabel="Checking media"
+              loadingLabel={t.input.checking}
               leadingIcon={<Sparkles />}
               onClick={handleAnalyze}
             >
-              Analyze
+              {t.input.analyze}
             </Button>
           </div>
         </div>
@@ -331,13 +339,14 @@ export function MediaInput() {
                     {file.name}
                   </p>
                   <p className="text-caption text-ink-faint">
-                    {file.kind === "image" ? "Image" : "Video"} · {formatBytes(file.size)}
+                    {file.kind === "image" ? t.input.image : t.input.video} ·{" "}
+                    {formatBytes(file.size)}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={clearFile}
-                  aria-label={`Remove ${file.name}`}
+                  aria-label={fill(t.input.removeFile, { name: file.name })}
                   className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-md text-ink-faint transition-colors hover:bg-surface-overlay hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
                   <X className="size-4" aria-hidden="true" />
@@ -367,18 +376,18 @@ export function MediaInput() {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
         <span className="inline-flex items-center gap-1.5 text-caption text-ink-faint">
           <FileImage className="size-3.5" aria-hidden="true" />
-          PNG, JPG, WEBP up to 25 MB
+          {t.input.imageLimits}
         </span>
         <span className="inline-flex items-center gap-1.5 text-caption text-ink-faint">
           <FileVideo className="size-3.5" aria-hidden="true" />
-          MP4, MOV, WEBM up to 200 MB
+          {t.input.videoLimits}
         </span>
         <button
           type="button"
           onClick={() => handleUrlChange(EXAMPLE_URL)}
           className="rounded-sm text-caption text-accent underline-offset-4 transition-colors hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
-          Try an example link
+          {t.input.tryExample}
         </button>
       </div>
     </div>
@@ -398,10 +407,12 @@ function StatusLine({
   notice: string | null;
   pending: boolean;
 }) {
+  const { t } = useLocale();
+
   if (pending) {
     return (
       <Message tone="muted" icon={<Loader2 className="animate-spin" />}>
-        Checking media…
+        {t.input.checking}
       </Message>
     );
   }
@@ -425,7 +436,7 @@ function StatusLine({
   if (fileName) {
     return (
       <Message tone="success" icon={<CheckCircle2 />}>
-        Ready to analyze.
+        {t.input.readyToAnalyze}
       </Message>
     );
   }
@@ -437,24 +448,19 @@ function StatusLine({
     case "platform":
       return (
         <Message tone="warning" icon={<Link2 />}>
-          {check.platform.label} link recognised — but analyzing links is not supported
-          yet.
+          {fill(t.input.linkRecognised, { platform: check.platform.label })}
           <span className="text-ink-faint">
             {check.platform.kind === "video"
-              ? " Video analysis is also still in development. Upload an image file instead."
-              : " Save the image and upload the file instead."}
+              ? t.input.linkVideoNote
+              : t.input.linkImageNote}
           </span>
         </Message>
       );
     case "direct":
       return (
         <Message tone="warning" icon={<Link2 />}>
-          Direct media link on {check.hostname} — but analyzing links is not supported
-          yet.
-          <span className="text-ink-faint">
-            {" "}
-            Download the file and upload it instead.
-          </span>
+          {fill(t.input.directLink, { host: check.hostname })}
+          <span className="text-ink-faint">{t.input.directLinkNote}</span>
         </Message>
       );
     case "insecure":

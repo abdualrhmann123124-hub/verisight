@@ -1,7 +1,10 @@
+"use client";
+
 import { Eye, GitCompareArrows, Lock, ScrollText } from "lucide-react";
 
 import { Container, Section } from "@/components/layout/container";
 import { Stagger, StaggerItem } from "@/components/motion/reveal";
+import { useLocale } from "@/components/providers/locale-provider";
 import { SectionHeading } from "@/features/landing/components/section-heading";
 
 /**
@@ -10,43 +13,35 @@ import { SectionHeading } from "@/features/landing/components/section-heading";
  * The brief is explicit: be honest, avoid buzzwords. So each point is a
  * concrete property of the system — including the one that admits the tool's
  * own limits, which is the most persuasive item on the list for the audience
- * that matters.
+ * that matters. Icons are fixed here; the copy is the dictionary's.
  */
-const REASONS = [
-  {
-    icon: Eye,
-    title: "Evidence you can inspect",
-    body: "Every score is traceable to a named analysis. You can see which signals fired, which did not, and how strongly each contributed.",
-  },
-  {
-    icon: GitCompareArrows,
-    title: "Disagreement is reported",
-    body: "When analyses conflict, the report says so and the confidence drops. Conflicting evidence is information, not something to smooth over.",
-  },
-  {
-    icon: ScrollText,
-    title: "Calibrated, not absolute",
-    body: "Output is a likelihood with a stated reliability. The platform will return 'inconclusive' rather than manufacture a verdict it cannot support.",
-  },
-  {
-    icon: Lock,
-    title: "Your media stays yours",
-    body: "Uploads are processed for analysis only. Nothing is published, sold, or used as training data.",
-  },
-] as const;
+const REASON_ICONS = [Eye, GitCompareArrows, ScrollText, Lock] as const;
 
 export function WhyVeriSight() {
+  const { t } = useLocale();
+
+  const reasons = [
+    { icon: REASON_ICONS[0], title: t.why.evidenceTitle, body: t.why.evidenceBody },
+    {
+      icon: REASON_ICONS[1],
+      title: t.why.disagreementTitle,
+      body: t.why.disagreementBody,
+    },
+    { icon: REASON_ICONS[2], title: t.why.calibratedTitle, body: t.why.calibratedBody },
+    { icon: REASON_ICONS[3], title: t.why.privacyTitle, body: t.why.privacyBody },
+  ];
+
   return (
     <Section spacing="lg" className="bg-surface/30">
       <Container>
         <SectionHeading
-          eyebrow="Why VeriSight"
-          title="Built to be questioned"
-          description="Verification tools are only useful if you can check their reasoning. That constraint shaped every part of this platform."
+          eyebrow={t.why.eyebrow}
+          title={t.why.title}
+          description={t.why.description}
         />
 
         <Stagger className="mt-16 grid gap-x-12 gap-y-10 sm:grid-cols-2">
-          {REASONS.map(({ icon: Icon, title, body }) => (
+          {reasons.map(({ icon: Icon, title, body }) => (
             <StaggerItem key={title}>
               <div className="flex gap-4">
                 <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-line bg-surface text-accent">

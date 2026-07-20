@@ -17,7 +17,13 @@ import { cn } from "@/lib/utils";
  * Letting CSS resolve the attribute means the correct icon is painted on
  * the very first frame with no JavaScript involved.
  */
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({
+  className,
+  label = "Toggle colour theme",
+}: {
+  className?: string;
+  label?: string;
+}) {
   const { resolvedTheme, setTheme } = useTheme();
 
   const toggle = useCallback(() => {
@@ -28,11 +34,12 @@ export function ThemeToggle({ className }: { className?: string }) {
     <button
       type="button"
       onClick={toggle}
-      // The label is static rather than "Switch to dark mode": the server
-      // cannot know the active theme, so a dynamic label would render one
-      // value on the server and another on the client.
-      aria-label="Toggle colour theme"
-      title="Toggle colour theme"
+      // The label names the control, not the current state: it stays "toggle
+      // theme" rather than "switch to dark", because the server cannot know
+      // the active theme and a state-dependent label would mismatch on
+      // hydration. It may still be localised — the locale is server-known.
+      aria-label={label}
+      title={label}
       className={cn(
         "relative grid size-10 shrink-0 cursor-pointer place-items-center",
         "rounded-lg border border-line bg-surface-raised text-ink-muted",

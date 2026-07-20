@@ -3,10 +3,11 @@
 import { AlertCircle, Check, CircleDashed, Loader2, MinusCircle } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
+import { useLocale } from "@/components/providers/locale-provider";
 import { Progress } from "@/components/ui/progress";
 import { DURATION, EASE_OUT_EXPO, SPRING_UI } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import type { Stage, StageStatus } from "@/features/analyze/lib/preflight";
+import type { Stage, StageId, StageStatus } from "@/features/analyze/lib/preflight";
 
 const STATUS_ICON: Record<StageStatus, typeof Check> = {
   pending: CircleDashed,
@@ -45,6 +46,20 @@ export function StageProgress({
   stages: readonly Stage[];
   className?: string;
 }) {
+  const { t } = useLocale();
+
+  // Stage labels and details come from the dictionary, keyed by stage id, so
+  // they localise with the rest of the UI. preflight.ts keeps English strings
+  // as the pipeline's own record; the displayed text is owned here.
+  const STAGE_TEXT: Record<StageId, { label: string; detail: string }> = {
+    validate: { label: t.stages.validate, detail: t.stages.validateDetail },
+    read: { label: t.stages.read, detail: t.stages.readDetail },
+    fingerprint: { label: t.stages.fingerprint, detail: t.stages.fingerprintDetail },
+    decode: { label: t.stages.decode, detail: t.stages.decodeDetail },
+    metadata: { label: t.stages.metadata, detail: t.stages.metadataDetail },
+    handoff: { label: t.stages.handoff, detail: t.stages.handoffDetail },
+  };
+
   const settled = stages.filter(
     (s) => s.status === "done" || s.status === "failed" || s.status === "blocked",
   ).length;
@@ -63,15 +78,19 @@ export function StageProgress({
             aria-live="polite"
           >
             {failed
-              ? "Analysis stopped"
-              : (active?.label ?? (percent === 100 ? "Preflight complete" : "Ready"))}
+              ? t.stages.stopped
+              : active
+                ? STAGE_TEXT[active.id].label
+                : percent === 100
+                  ? t.stages.complete
+                  : t.stages.ready}
           </p>
           <span className="tabular text-caption text-ink-faint">{percent}%</span>
         </div>
         <Progress
           value={percent}
           tone={failed ? "danger" : percent === 100 ? "success" : "accent"}
-          aria-label="Preflight progress"
+          aria-label={t.stages.progressLabel}
         />
       </div>
 
@@ -109,14 +128,14 @@ export function StageProgress({
                     isIdle ? "text-ink-faint" : "text-ink",
                   )}
                 >
-                  {stage.label}
+                  {STAGE_TEXT[stage.id].label}
                   <span className="sr-only"> — {stage.status}</span>
                 </span>
 
                 <AnimatePresence mode="wait" initial={false}>
                   {(stage.status === "active" || stage.note) && (
                     <motion.span
-                      key={stage.note ?? stage.detail}
+                      key={stage.note ?? STAGE_TEXT[stage.id].detail}
                       initial={{ opacity: 0, y: -2 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, transition: { duration: DURATION.fast } }}
@@ -126,7 +145,7 @@ export function StageProgress({
                         stage.status === "failed" ? "text-danger" : "text-ink-faint",
                       )}
                     >
-                      {stage.note ?? stage.detail}
+                      {stage.note ?? STAGE_TEXT[stage.id].detail}
                     </motion.span>
                   )}
                 </AnimatePresence>

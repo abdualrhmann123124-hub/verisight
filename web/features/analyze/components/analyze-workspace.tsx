@@ -21,6 +21,7 @@ import {
 
 import { Container } from "@/components/layout/container";
 import { Reveal } from "@/components/motion/reveal";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -69,6 +70,7 @@ interface Failure {
  * number would undermine everything else in the build.
  */
 export function AnalyzeWorkspace() {
+  const { t } = useLocale();
   const [phase, setPhase] = useState<Phase>("idle");
   const [stages, setStages] = useState<readonly Stage[]>(INITIAL_STAGES);
   const [facts, setFacts] = useState<MediaFacts | null>(null);
@@ -133,9 +135,13 @@ export function AnalyzeWorkspace() {
       });
 
       try {
-        const result = await runPreflight(file, {
-          onStageChange: (id, status, durationMs) => patchStage(id, status, durationMs),
-        });
+        const result = await runPreflight(
+          file,
+          {
+            onStageChange: (id, status, durationMs) => patchStage(id, status, durationMs),
+          },
+          t.validation,
+        );
         setFacts(result);
 
         // Hand off to the analysis engine. If it is not running, the stage
@@ -169,8 +175,8 @@ export function AnalyzeWorkspace() {
           error instanceof PreflightError
             ? { message: error.message, recovery: error.recovery }
             : {
-                message: "Something went wrong while reading this file.",
-                recovery: "Try again, or use a different file.",
+                message: t.validation.generic,
+                recovery: t.validation.genericRecovery,
               };
         setFailure(failureInfo);
         if (error instanceof PreflightError) {
@@ -179,7 +185,7 @@ export function AnalyzeWorkspace() {
         setPhase("error");
       }
     },
-    [patchStage],
+    [patchStage, t],
   );
 
   // Pick up a file chosen on the landing page and start immediately, so the
@@ -244,13 +250,13 @@ export function AnalyzeWorkspace() {
             className="inline-flex w-fit items-center gap-1.5 rounded-sm text-caption text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             <ArrowLeft className="size-3.5" aria-hidden="true" />
-            Back to home
+            {t.workspace.backHome}
           </Link>
-          <h1 className="font-display text-h1 text-ink">Analyze media</h1>
+          <h1 className="font-display text-h1 text-ink">{t.workspace.title}</h1>
         </div>
         {showWorkspace && (
           <Button variant="secondary" leadingIcon={<RotateCcw />} onClick={reset}>
-            Start over
+            {t.workspace.startOver}
           </Button>
         )}
       </div>
@@ -299,11 +305,10 @@ export function AnalyzeWorkspace() {
               </motion.div>
 
               <h2 className="mt-6 font-display text-h3 text-ink">
-                {dragging ? "Drop to begin" : "Drop a file to analyze"}
+                {dragging ? t.workspace.dropTitleActive : t.workspace.dropTitle}
               </h2>
               <p className="mt-2 max-w-md text-body-sm text-ink-muted">
-                Everything runs in your browser. The file is never uploaded, and nothing
-                leaves this device.
+                {t.workspace.dropSubtitle}
               </p>
 
               <Button
@@ -312,11 +317,9 @@ export function AnalyzeWorkspace() {
                 leadingIcon={<Sparkles />}
                 onClick={() => fileInputRef.current?.click()}
               >
-                Choose a file
+                {t.workspace.chooseFile}
               </Button>
-              <p className="mt-4 text-caption text-ink-faint">
-                PNG, JPG, WEBP up to 25 MB · MP4, MOV, WEBM up to 200 MB
-              </p>
+              <p className="mt-4 text-caption text-ink-faint">{t.workspace.limits}</p>
             </div>
           </motion.div>
         ) : (
@@ -338,7 +341,7 @@ export function AnalyzeWorkspace() {
                 >
                   <div className="flex flex-col gap-3">
                     <Badge variant="danger" size="lg" dot>
-                      Analysis stopped
+                      {t.workspace.analysisStopped}
                     </Badge>
                     <h2 className="font-display text-h3 text-ink">{failure.message}</h2>
                     <p className="max-w-prose text-body-sm text-ink-muted">
@@ -350,10 +353,10 @@ export function AnalyzeWorkspace() {
                         leadingIcon={<Upload />}
                         onClick={() => fileInputRef.current?.click()}
                       >
-                        Choose another file
+                        {t.workspace.chooseAnother}
                       </Button>
                       <Button variant="ghost" onClick={reset}>
-                        Start over
+                        {t.workspace.startOver}
                       </Button>
                     </div>
                   </div>
@@ -369,15 +372,13 @@ export function AnalyzeWorkspace() {
                   <Card variant="surface" padding="lg" className="edge-highlight">
                     <div className="flex flex-col gap-4">
                       <Badge variant="warning" size="lg" icon={<FlaskConical />}>
-                        Assessment unavailable
+                        {t.workspace.assessmentUnavailable}
                       </Badge>
                       <h2 className="font-display text-h3 text-ink">
-                        Preflight complete — engine did not respond
+                        {t.workspace.engineUnavailableTitle}
                       </h2>
                       <p className="max-w-prose text-body text-ink-muted">
-                        Your file was read, fingerprinted, decoded, and its metadata
-                        parsed locally. The forensic analyzers run in a separate service,
-                        which is not reachable right now.
+                        {t.workspace.engineUnavailableBody}
                       </p>
                       {engineNote && (
                         <div className="flex gap-3 rounded-xl bg-surface-inset p-4">
@@ -389,8 +390,7 @@ export function AnalyzeWorkspace() {
                         </div>
                       )}
                       <p className="text-caption text-ink-faint">
-                        No score is shown because none was produced. A number invented to
-                        fill this space would be worse than no number at all.
+                        {t.workspace.engineUnavailableNote}
                       </p>
                     </div>
                   </Card>

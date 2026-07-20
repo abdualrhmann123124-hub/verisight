@@ -1,43 +1,51 @@
+"use client";
+
 import { FileSearch, Layers, Upload } from "lucide-react";
 
 import { Container, Section } from "@/components/layout/container";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
+import { useLocale } from "@/components/providers/locale-provider";
 import { Card } from "@/components/ui/card";
 import { SectionHeading } from "@/features/landing/components/section-heading";
 
-const STEPS = [
-  {
-    icon: Upload,
-    step: "01",
-    title: "Provide the media",
-    body: "Paste a public link or upload an image or video. Files are processed for analysis and are not published anywhere.",
-  },
-  {
-    icon: Layers,
-    step: "02",
-    title: "Independent analyses run",
-    body: "Metadata, compression, noise, frequency, and texture signals are examined separately, so no single indicator decides the outcome.",
-  },
-  {
-    icon: FileSearch,
-    step: "03",
-    title: "Read the evidence",
-    body: "You get a confidence estimate with the findings behind it — including which signals disagreed and how reliable the assessment is.",
-  },
-] as const;
+// Icons and step numbers are presentation; the copy is the dictionary's.
+const STEP_ICONS = [Upload, Layers, FileSearch] as const;
 
 export function HowItWorks() {
+  const { t } = useLocale();
+
+  const steps = [
+    {
+      icon: STEP_ICONS[0],
+      step: "01",
+      title: t.howItWorks.step1Title,
+      body: t.howItWorks.step1Body,
+    },
+    {
+      icon: STEP_ICONS[1],
+      step: "02",
+      title: t.howItWorks.step2Title,
+      body: t.howItWorks.step2Body,
+    },
+    {
+      icon: STEP_ICONS[2],
+      step: "03",
+      title: t.howItWorks.step3Title,
+      body: t.howItWorks.step3Body,
+    },
+  ];
+
   return (
     <Section id="how-it-works" spacing="lg">
       <Container>
         <SectionHeading
-          eyebrow="How it works"
-          title="Three steps, no guesswork"
-          description="Each stage is inspectable. If the platform cannot reach a confident answer, it says so rather than picking one."
+          eyebrow={t.howItWorks.eyebrow}
+          title={t.howItWorks.title}
+          description={t.howItWorks.description}
         />
 
         <Stagger className="mt-16 grid gap-6 md:grid-cols-3">
-          {STEPS.map(({ icon: Icon, step, title, body }) => (
+          {steps.map(({ icon: Icon, step, title, body }) => (
             <StaggerItem key={step}>
               <Card variant="surface" padding="lg" className="h-full">
                 <div className="flex items-center justify-between">
@@ -60,8 +68,7 @@ export function HowItWorks() {
 
         <Reveal delay={0.1}>
           <p className="mt-10 text-center text-caption text-ink-faint">
-            Processing time depends on media size and type. Videos take longer than images
-            because frames are sampled and analyzed individually.
+            {t.howItWorks.footnote}
           </p>
         </Reveal>
       </Container>
